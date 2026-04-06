@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 2 — GCP Projects, IAM & Billing</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 2</div>
+  <h1>Projects, IAM<br>&amp; Billing</h1>
+  <p class="tagline">The Foundation Where 70% of Mistakes Happen</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 WHY THIS MATTERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why This Section <span class="hl">Matters Most</span></h2>
+    <p class="sub">Most cloud disasters aren't caused by bad code</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card rb">
+        <span class="icon">🔓</span>
+        <div class="ct">Wrong Access</div>
+        <p>Wrong people get access to production — data leaks, accidental deletions.</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">💸</span>
+        <div class="ct">No Billing Alerts</div>
+        <p>No budget limits set — surprise bill at end of month.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">📦</span>
+        <div class="ct">One Giant Project</div>
+        <p>Everything dumped into one project — zero isolation, total chaos.</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Master this section = avoid 70% of real-world cloud mistakes.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 RESOURCE HIERARCHY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>GCP <span class="hl">Resource Hierarchy</span></h2>
+    <p class="sub">The org chart of your cloud — everything flows top-down</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow">
+      <div class="anode public">Organization (Your Company)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Folders (Departments)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark);">Projects (Core Unit)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode danger">Resources (VM, DB, Storage)</div>
+    </div>
+    <div class="cards c4" style="margin-top:24px;">
+      <div class="card centered">
+        <span class="icon">🏢</span>
+        <div class="ct">Organization</div>
+        <p>Company HQ</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">📁</span>
+        <div class="ct">Folder</div>
+        <p>Department</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">📋</span>
+        <div class="ct">Project</div>
+        <p>Team workspace</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">⚙️</span>
+        <div class="ct">Resource</div>
+        <p>Actual services</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 PROJECTS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Projects: <span class="hl">The Most Important Concept</span></h2>
+    <p class="sub">Everything in GCP lives inside a Project</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <span class="icon">🖥️</span>
+        <div class="ct">Compute Engine VMs</div>
+        <p>Virtual machines for running workloads</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🚀</span>
+        <div class="ct">Cloud Run Services</div>
+        <p>Serverless containers for modern apps</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🗄️</span>
+        <div class="ct">Storage Buckets</div>
+        <p>Object storage for files and media</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🗃️</span>
+        <div class="ct">Databases</div>
+        <p>Cloud SQL, Firestore, Bigtable</p>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>Critical rule:</strong> If a project is deleted &rarr; EVERYTHING inside is gone. VMs, databases, storage — all of it.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 REAL-WORLD EXAMPLE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World Example: <span class="hl">Project Structure</span></h2>
+    <p class="sub">How teams should organize GCP projects</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block">
+          <div class="lang">Hierarchy</div>
+          <pre>
+<span class="cmd">Organization:</span> <span class="str">acme-corp.com</span>
+   └── <span class="flag">Folder:</span> payments
+         ├── Project: <span class="str">payments-prod</span>
+         ├── Project: <span class="str">payments-dev</span>
+         └── Project: <span class="str">payments-test</span></pre>
+        </div>
+        <div class="callout green" style="margin-top:16px;">
+          <strong>Golden rule:</strong> Always separate PROD from NON-PROD.
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="compare">
+          <div class="compare-box bad">
+            <div class="compare-head">The Beginner Mistake</div>
+            <div class="compare-body">
+              <p>Everything in ONE project &rarr; access chaos, billing confusion, no isolation.</p>
+            </div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-head">The Right Pattern</div>
+            <div class="compare-body">
+              <p>Separate by environment: <code>myapp-dev</code>, <code>myapp-test</code>, <code>myapp-prod</code></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 IAM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>IAM: <span class="hl">Who Can Do What, Where?</span></h2>
+    <p class="sub">Identity &amp; Access Management — the security backbone of GCP</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:24px;">
+      <div class="step">WHO (Identity)</div>
+      <div class="arr">+</div>
+      <div class="step grn">WHAT (Role)</div>
+      <div class="arr">+</div>
+      <div class="step org">WHERE (Resource)</div>
+    </div>
+    <table>
+      <thead><tr><th>Component</th><th>Question</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Who</strong></td><td>Which user or service?</td><td><code>dev@company.com</code></td></tr>
+        <tr><td><strong>What</strong></td><td>Which role?</td><td><code>Viewer</code></td></tr>
+        <tr><td><strong>Where</strong></td><td>Which resource?</td><td><code>myapp-prod</code> project</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Result:</strong> <code>dev@company.com</code> can only VIEW resources in <code>myapp-prod</code>. Nothing more.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 IAM ROLES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>IAM Roles: <span class="hl">From Broad to Precise</span></h2>
+    <p class="sub">The principle of least privilege in action</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>Basic Roles</strong> — Too broad for production</p>
+        <table>
+          <thead><tr><th>Role</th><th>Access Level</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Owner</strong></td><td>Full control + billing</td></tr>
+            <tr><td><strong>Editor</strong></td><td>Create &amp; modify resources</td></tr>
+            <tr><td><strong>Viewer</strong></td><td>Read-only access</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <p><strong>Predefined Roles</strong> — Use these!</p>
+        <div class="cards">
+          <div class="card gb">
+            <div class="ct">Compute Admin</div>
+            <p>Manage VMs only</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">Storage Admin</div>
+            <p>Manage buckets only</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">Cloud Run Admin</div>
+            <p>Manage Cloud Run only</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="callout orange">
+      <strong>Principle of Least Privilege:</strong> Give the minimum access needed. Nothing more.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 IAM DISASTER ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Classic <span class="hl">IAM Disaster</span></h2>
+    <p class="sub">What happens when access is not managed properly</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare">
+      <div class="compare-box bad">
+        <div class="compare-head">Bad: Owner Role to All 20 Devs</div>
+        <div class="compare-body">
+          <div class="scenario-item">
+            <span class="dot-red">🔴</span>
+            <div><strong>Anyone can delete production databases</strong></div>
+          </div>
+          <div class="scenario-item">
+            <span class="dot-red">🔴</span>
+            <div><strong>Anyone can rack up massive bills</strong></div>
+          </div>
+          <div class="scenario-item">
+            <span class="dot-red">🔴</span>
+            <div><strong>Zero accountability — who did what?</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Good: Specific Roles Per Person</div>
+        <div class="compare-body">
+          <div class="scenario-item">
+            <span class="dot-red">✅</span>
+            <div><strong>Developer</strong> <span>&rarr; Cloud Run Admin + Logs Viewer</span></div>
+          </div>
+          <div class="scenario-item">
+            <span class="dot-red">✅</span>
+            <div><strong>DBA</strong> <span>&rarr; Cloud SQL Admin</span></div>
+          </div>
+          <div class="scenario-item">
+            <span class="dot-red">✅</span>
+            <div><strong>Intern</strong> <span>&rarr; Viewer only</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 SERVICE ACCOUNTS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Service Accounts: <span class="hl">Identity for Apps</span></h2>
+    <p class="sub">Your app needs to access Cloud Storage. How does it authenticate?</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Wrong Way</div>
+        <div class="compare-body">
+          <p>Hardcode username/password in code. Secrets in Git. Credentials leaked.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Right Way: Service Account</div>
+        <div class="compare-body">
+          <p>Secure, IAM-controlled, auditable — no hardcoded credentials.</p>
+        </div>
+      </div>
+    </div>
+    <div class="arrow-flow">
+      <div class="step">App</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Service Account</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">IAM Role</div>
+      <div class="arr">&#8594;</div>
+      <div class="step">Resource</div>
+    </div>
+    <div class="code-block" style="margin-top:16px;">
+      <div class="lang">Example</div>
+      <pre><span class="comment"># Service account with specific role</span>
+<span class="cmd">payment-service</span>@project.iam.gserviceaccount.com
+  <span class="flag">Role:</span> <span class="str">Storage Admin</span>
+  <span class="flag">Scope:</span> <span class="str">myapp-prod project only</span></pre>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 BILLING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Billing: <span class="hl">Where Money Meets Architecture</span></h2>
+    <p class="sub">Billing is linked to PROJECT — no billing account means most services won't work</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>Real Risks</strong></p>
+        <table>
+          <thead><tr><th>Scenario</th><th>Consequence</th></tr></thead>
+          <tbody>
+            <tr><td>No budget alerts</td><td><strong style="color:var(--red)">Surprise bill of ₹50,000</strong></td></tr>
+            <tr><td>Forgot to stop a VM</td><td><strong style="color:var(--red)">Charges running 24/7</strong></td></tr>
+            <tr><td>No resource cleanup</td><td><strong style="color:var(--red)">Zombie resources eating money</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <p><strong>Best Practices</strong></p>
+        <div class="cards">
+          <div class="card gb">
+            <div class="ct">Set Budget Alerts</div>
+            <p>At 50%, 80%, and 100% thresholds</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">Clean Up Daily</div>
+            <p>Stop/delete unused resources</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">Use Free Tier</div>
+            <p>Use wisely during learning</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Project</strong> = isolation boundary + billing boundary — the core unit of GCP</li>
+      <li><strong>IAM</strong> = the security backbone of all GCP — Who + What + Where</li>
+      <li><strong>Service Accounts</strong> = mandatory for every app — never hardcode credentials</li>
+      <li><strong>Least Privilege</strong> = the #1 security principle — minimum access needed</li>
+      <li><strong>Billing control</strong> = an architecture responsibility, not an afterthought</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>GCP Global Infrastructure</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Regions, Zones, and why your architecture decisions start here.</p>
+  <div class="next-box">Section 3 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

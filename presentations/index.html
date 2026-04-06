@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCP Masterclass — All Sections</title>
+  <link rel="stylesheet" href="slides.css">
+  <style>
+    body {
+      background: var(--bg);
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 60px 40px;
+    }
+
+    .index-page {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .index-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .index-header .badge {
+      display: inline-block;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 8px 24px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .index-header h1 {
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: var(--text);
+      line-height: 1.1;
+      margin: 0 0 12px;
+    }
+
+    .index-header h1 span { color: var(--blue); }
+
+    .index-header p {
+      font-size: 1.2rem;
+      color: var(--text-sub);
+      margin: 0;
+    }
+
+    .section-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-link {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 28px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s var(--ease);
+    }
+
+    .section-link:hover {
+      border-color: var(--blue);
+      box-shadow: 0 4px 20px rgba(26, 115, 232, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .section-num {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-info { flex: 1; }
+
+    .section-info .title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .section-info .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+      margin: 0;
+    }
+
+    .section-arrow {
+      font-size: 1.3rem;
+      color: var(--text-light);
+      transition: transform 0.2s;
+    }
+
+    .section-link:hover .section-arrow {
+      transform: translateX(4px);
+      color: var(--blue);
+    }
+
+    .index-footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-light);
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 32px 16px; }
+      .index-header h1 { font-size: 2.2rem; }
+      .section-link { padding: 16px 18px; gap: 14px; }
+      .section-num { width: 40px; height: 40px; min-width: 40px; font-size: 0.95rem; }
+      .section-info .title { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="index-page">
+
+  <div class="index-header">
+    <div class="badge">Workshop Slides</div>
+    <h1>GCP <span>Masterclass</span></h1>
+    <p>10 sections covering cloud fundamentals to production architecture</p>
+  </div>
+
+  <div class="section-list">
+    <a href="01-intro-cloud-and-gcp.html" class="section-link">
+      <div class="section-num">1</div>
+      <div class="section-info">
+        <div class="title">What is Cloud Computing & Why GCP?</div>
+        <p class="subtitle">From server rooms to global scale</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="02-projects-iam-billing.html" class="section-link">
+      <div class="section-num">2</div>
+      <div class="section-info">
+        <div class="title">Projects, IAM & Billing</div>
+        <p class="subtitle">The foundation where 70% of mistakes happen</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="03-global-infrastructure.html" class="section-link">
+      <div class="section-num">3</div>
+      <div class="section-info">
+        <div class="title">Global Infrastructure</div>
+        <p class="subtitle">Regions, zones & designing for failure</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="04-core-services-overview.html" class="section-link">
+      <div class="section-num">4</div>
+      <div class="section-info">
+        <div class="title">Core GCP Services Overview</div>
+        <p class="subtitle">Choosing the right tool for every job</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="05-compute-engine.html" class="section-link">
+      <div class="section-num">5</div>
+      <div class="section-info">
+        <div class="title">Compute Engine: VMs Deep Dive</div>
+        <p class="subtitle">Understanding cloud from the ground up</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="06-cloud-run.html" class="section-link">
+      <div class="section-num">6</div>
+      <div class="section-info">
+        <div class="title">Cloud Run</div>
+        <p class="subtitle">Zero infra, auto-scaling, pay per request</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="07-cloud-storage.html" class="section-link">
+      <div class="section-num">7</div>
+      <div class="section-info">
+        <div class="title">Cloud Storage</div>
+        <p class="subtitle">Store anything, scale infinitely, pay smartly</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="08-cloud-sql.html" class="section-link">
+      <div class="section-num">8</div>
+      <div class="section-info">
+        <div class="title">Cloud SQL: Managed Databases</div>
+        <p class="subtitle">Transactions, reliability & zero DBA headaches</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="09-vpc-networking.html" class="section-link">
+      <div class="section-num">9</div>
+      <div class="section-info">
+        <div class="title">VPC & Networking</div>
+        <p class="subtitle">The security backbone of cloud architecture</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+
+    <a href="10-load-balancing.html" class="section-link">
+      <div class="section-num">10</div>
+      <div class="section-info">
+        <div class="title">Load Balancing & Traffic Management</div>
+        <p class="subtitle">The gateway to high availability</p>
+      </div>
+      <div class="section-arrow">&rarr;</div>
+    </a>
+  </div>
+
+  <div class="index-footer">
+    GCP Masterclass &middot; 10 Sections &middot; Cloud Fundamentals to Production Architecture
+  </div>
+
+</div>
+
+</body>
+</html>

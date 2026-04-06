@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 1 — What is Cloud Computing & Why GCP?</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 1</div>
+  <h1>What is Cloud Computing<br>&amp; Why GCP?</h1>
+  <p class="tagline">From Server Rooms to Global Scale</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 OLD WORLD ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Old World: <span class="hl">On-Premise IT</span></h2>
+    <p class="sub">Imagine building India's next big fintech app. Before cloud, you'd need to...</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card rb">
+        <span class="icon">💰</span>
+        <div class="ct">Buy Physical Servers</div>
+        <p>Lakhs of rupees in upfront capital — before writing a single line of code.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">🏢</span>
+        <div class="ct">Rent a Data Center</div>
+        <p>Power, cooling, physical security, networking — all your responsibility.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">🔧</span>
+        <div class="ct">Hire Infra Teams</div>
+        <p>Engineers maintaining hardware instead of building your product.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">⏳</span>
+        <div class="ct">Wait Weeks to Scale</div>
+        <p>Festival traffic spike? Too bad — new servers take weeks to procure.</p>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>The painful truth:</strong> Your engineering team becomes an infrastructure team instead of a product team.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 BREAKING POINT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The <span class="hl">Breaking Point</span></h2>
+    <p class="sub">A real scenario that explains why cloud exists</p>
+  </div>
+  <div class="slide-body">
+    <div class="scenario-box">
+      <h3>Scenario: Flash Sale Day — Traffic Spikes 10x</h3>
+      <div class="cards c2">
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Servers Maxed Out</strong><span>Your 5 servers hit 100% CPU — no room left</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Users See Errors</strong><span>Timeouts, failed payments, angry customers</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Can't Scale in Minutes</strong><span>New hardware takes weeks to buy and install</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Revenue Lost. Trust Broken.</strong><span>Users switch to competitors who stayed online</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>This is the exact problem cloud computing solves.</strong> Scale instantly. Pay only for what you use.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 RENT DON'T OWN ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud = <span class="hl">Rent, Don't Own</span></h2>
+    <p class="sub">The fundamental shift from ownership to consumption</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Old Model (CAPEX)</th><th>Cloud Model (OPEX)</th></tr></thead>
+      <tbody>
+        <tr><td>Buy physical servers upfront</td><td><strong>Rent compute on demand</strong></td></tr>
+        <tr><td>Build &amp; maintain data centers</td><td><strong>Provider handles all infra</strong></td></tr>
+        <tr><td>Scale in weeks or months</td><td><strong>Scale in seconds</strong></td></tr>
+        <tr><td>Pay everything upfront</td><td><strong>Pay-as-you-go</strong></td></tr>
+        <tr><td>Guess future capacity</td><td><strong>Auto-scale with actual demand</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Core idea:</strong> Don't manage hardware — just consume resources like electricity. Turn on when needed, turn off when done.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 SUPERPOWERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>5 Superpowers of <span class="hl">Cloud</span></h2>
+    <p class="sub">The characteristics that make cloud transformative</p>
+  </div>
+  <div class="slide-body">
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">On-Demand Self Service</div><p class="fd">Spin up a VM in 30 seconds. No tickets, no approvals, no humans needed.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Elasticity</div><p class="fd">Auto-scale from 1 to 1,000 servers based on real-time traffic.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Pay-As-You-Go</div><p class="fd">VM runs 1 hour? Pay for 1 hour. Storage 10GB? Pay for 10GB.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">4</div>
+        <div><div class="ft">Resource Pooling</div><p class="fd">Shared infrastructure across customers. Multi-tenant efficiency at scale.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">5</div>
+        <div><div class="ft">Broad Network Access</div><p class="fd">Accessible from anywhere — Console, CLI, APIs, SDKs.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 SERVICE MODELS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The 3 <span class="hl">Service Models</span></h2>
+    <p class="sub">How much do YOU control vs. what does the CLOUD control?</p>
+  </div>
+  <div class="slide-body">
+    <div class="model-stack">
+      <div class="mcol">
+        <div class="mh">IaaS</div>
+        <div class="ml you">Application &larr; You</div>
+        <div class="ml you">Runtime &larr; You</div>
+        <div class="ml you">OS &larr; You</div>
+        <div class="ml cloud">Virtualization &larr; Cloud</div>
+        <div class="ml cloud">Hardware &larr; Cloud</div>
+        <div class="mlabel"><strong>Compute Engine</strong> (VMs)</div>
+      </div>
+      <div class="mcol">
+        <div class="mh">PaaS</div>
+        <div class="ml you">Application &larr; You</div>
+        <div class="ml cloud">Runtime &larr; Cloud</div>
+        <div class="ml cloud">OS &larr; Cloud</div>
+        <div class="ml cloud">Virtualization &larr; Cloud</div>
+        <div class="ml cloud">Hardware &larr; Cloud</div>
+        <div class="mlabel"><strong>App Engine</strong></div>
+      </div>
+      <div class="mcol">
+        <div class="mh">Serverless</div>
+        <div class="ml you">Code &larr; You</div>
+        <div class="ml cloud">Runtime &larr; Cloud</div>
+        <div class="ml cloud">OS &larr; Cloud</div>
+        <div class="ml cloud">Virtualization &larr; Cloud</div>
+        <div class="ml cloud">Hardware &larr; Cloud</div>
+        <div class="mlabel"><strong>Cloud Run</strong></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#fff3e0;border:1px solid #bf360c;"></span> You manage</span>
+      <span><span class="dot" style="background:#e8f0fe;border:1px solid #1a73e8;"></span> Cloud manages</span>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 GOLDEN INSIGHT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The <span class="hl">Golden Insight</span></h2>
+    <p class="sub">The trade-off every architect must understand</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow">
+      <div class="step">IaaS</div>
+      <div class="arr">&#8594;</div>
+      <div class="step">PaaS</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Serverless</div>
+    </div>
+    <div class="cards c2" style="margin-top:20px;">
+      <div class="card centered">
+        <span class="icon">📉</span>
+        <div class="ct">Less Control</div>
+        <p>Over infrastructure, OS, runtime configurations</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">📈</span>
+        <div class="ct">More Productivity</div>
+        <p>Faster development, lower ops burden, quicker delivery</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">🔧</span>
+        <div class="ct">Less Maintenance</div>
+        <p>No patching, no scaling scripts, no 3 AM alerts</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">🚀</span>
+        <div class="ct">Faster Delivery</div>
+        <p>From idea to production in hours, not weeks</p>
+      </div>
+    </div>
+    <div class="callout orange">
+      <strong>Choose based on your needs, not hype.</strong> Full control? Use IaaS. Just ship fast? Go Serverless.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 ENTER GCP ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Enter <span class="hl">Google Cloud Platform</span></h2>
+    <p class="sub">The same infrastructure that runs the world's largest services</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card centered">
+        <span class="icon">▶️</span>
+        <div class="ct">YouTube</div>
+        <p>500+ hours uploaded every minute. Billions of daily views.</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">📧</span>
+        <div class="ct">Gmail</div>
+        <p>1.8 billion active users worldwide. Always available.</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">🔍</span>
+        <div class="ct">Google Search</div>
+        <p>8.5 billion searches per day. Sub-second response times.</p>
+      </div>
+    </div>
+    <div class="callout green" style="text-align:center;font-size:1.3rem;">
+      If it can handle YouTube, it can handle your app.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 COMPARISON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>GCP vs AWS vs Azure</h2>
+    <p class="sub">A quick, honest comparison of the Big Three</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Feature</th><th>GCP</th><th>AWS</th><th>Azure</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Core Strength</strong></td><td><strong style="color:#1a73e8">Data + AI + Networking</strong></td><td>Market leader, broadest services</td><td>Enterprise &amp; Microsoft</td></tr>
+        <tr><td><strong>Network</strong></td><td><strong style="color:#1a73e8">Best (private backbone)</strong></td><td>Good</td><td>Good</td></tr>
+        <tr><td><strong>Console UI</strong></td><td><strong style="color:#1a73e8">Clean &amp; simple</strong></td><td>Complex, steep curve</td><td>Medium</td></tr>
+        <tr><td><strong>Pricing</strong></td><td><strong style="color:#1a73e8">Per-second billing</strong></td><td>Per-hour (mostly)</td><td>Varies</td></tr>
+        <tr><td><strong>Kubernetes</strong></td><td><strong style="color:#1a73e8">Invented it (GKE)</strong></td><td>EKS (adopted)</td><td>AKS (adopted)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>GCP's secret weapon:</strong> Google's private fiber network — subsea cables spanning the globe — gives it a real networking edge.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li>Cloud shifts you from <strong>ownership to consumption</strong> — rent, don't buy</li>
+      <li>GCP is strongest in <strong>networking, data, and serverless</strong> — built on Google-scale infra</li>
+      <li>Service models (IaaS / PaaS / Serverless) define your <strong>control vs responsibility</strong> trade-off</li>
+      <li>Cloud success depends on <strong>architecture decisions</strong>, not just picking tools</li>
+      <li><strong>Elasticity is the biggest innovation</strong> — scale to demand, pay for what you use</li>
+      <li><strong>Start hands-on:</strong> GCP Console + Cloud Shell are your entry point to real work</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>GCP Projects, IAM &amp; Billing</p>
+  <p style="font-size:1.05rem;opacity:0.5;">The foundation where 70% of real-world mistakes happen.</p>
+  <div class="next-box">Section 2 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

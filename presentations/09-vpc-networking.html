@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 9 — VPC & Networking</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 9</div>
+  <h1>VPC &amp;<br>Networking</h1>
+  <p class="tagline">The Security Backbone of Cloud Architecture</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 WHY NETWORKING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why Networking is Where <span class="hl">Architects Stand Out</span></h2>
+    <p class="sub">Most beginners skip networking — then wonder why things go wrong</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card rb">
+        <span class="icon">🔓</span>
+        <div class="ct">Database Got Hacked</div>
+        <p>Exposed to the internet without firewall rules</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">🌐</span>
+        <div class="ct">Services Exposed</div>
+        <p>Internal APIs reachable by anyone on the internet</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">🏗️</span>
+        <div class="ct">No Security Layers</div>
+        <p>Flat architecture with zero defense in depth</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Networking is the difference between a demo and a production system.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 WHAT IS VPC ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is a <span class="hl">VPC?</span></h2>
+    <p class="sub">Virtual Private Cloud — your own private network inside Google Cloud</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block">
+          <div class="lang">Structure</div>
+          <pre><span class="cmd">VPC</span> (<span class="str">your private network</span>)
+ ├── <span class="flag">Subnet-1</span> (Mumbai — <span class="str">10.0.1.0/24</span>)
+ ├── <span class="flag">Subnet-2</span> (US — <span class="str">10.0.2.0/24</span>)
+ └── <span class="str">Resources</span> (VMs, DBs, Cloud Run)</pre>
+        </div>
+        <div class="callout" style="margin-top:16px;">
+          Think of it as your <strong>company's office network</strong>, but in the cloud. You control who can enter. Outsiders can't see what's inside.
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="compare">
+          <div class="compare-box bad">
+            <div class="compare-head">Without VPC</div>
+            <div class="compare-body">
+              <p>Everything public. No isolation. Anyone can reach your database. <strong>Security nightmare.</strong></p>
+            </div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-head">With VPC</div>
+            <div class="compare-body">
+              <p>Private communication. Controlled access. Database hidden from internet. <strong>Secure by design.</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 SUBNETS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Subnets: <span class="hl">Carving Up Your Network</span></h2>
+    <p class="sub">A range of IP addresses inside your VPC, tied to a region</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Subnet</th><th>IP Range</th><th>Region</th><th>Contains</th></tr></thead>
+      <tbody>
+        <tr><td><strong>app-subnet</strong></td><td><code>10.0.1.0/24</code></td><td>asia-south1</td><td>App servers</td></tr>
+        <tr><td><strong>db-subnet</strong></td><td><code>10.0.2.0/24</code></td><td>asia-south1</td><td>Databases</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3">
+      <div class="card centered bb">
+        <span class="icon">🌏</span>
+        <div class="ct">Regional</div>
+        <p>Subnets span all zones in a region</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🔒</span>
+        <div class="ct">Internal IPs</div>
+        <p>Resources inside get private IP addresses</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">🔗</span>
+        <div class="ct">Inter-Subnet</div>
+        <p>Different subnets can talk within the same VPC</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 BAD ARCHITECTURE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Architecture That <span class="hl" style="color:var(--red)">Gets Hacked</span></h2>
+    <p class="sub">Everything public — the most dangerous design pattern</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">User</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode danger">VM (Public IP) — exposed to internet</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode danger">Database (Public IP) — accessible by anyone</div>
+    </div>
+    <div class="scenario-box">
+      <h3>What Goes Wrong</h3>
+      <div class="cards c3">
+        <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>VM directly on internet</strong> <span>— no protection layer</span></div></div>
+        <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Database reachable by anyone</strong> <span>— zero access control</span></div></div>
+        <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>One vulnerability = total breach</strong> <span>— no defense in depth</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 GOOD ARCHITECTURE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Architecture That's <span class="hl">Secure</span></h2>
+    <p class="sub">Public entry, private backend — the golden rule</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">User</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Load Balancer (Public — the ONLY public entry point)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">App Server (Private IP — inside VPC)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Database (Private IP — inside VPC)</div>
+    </div>
+    <div class="callout green">
+      <strong>Golden Rule:</strong> Only expose the Load Balancer. Everything else stays private.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 FIREWALL RULES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Firewall Rules: <span class="hl">Your Security Gates</span></h2>
+    <p class="sub">Control what traffic can enter or leave your VPC</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <table>
+          <thead><tr><th>Rule</th><th>Protocol</th><th>Port</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><strong>allow-ssh</strong></td><td>TCP</td><td>22</td><td>SSH access to VMs</td></tr>
+            <tr><td><strong>allow-http</strong></td><td>TCP</td><td>80</td><td>Web traffic</td></tr>
+            <tr><td><strong>allow-app</strong></td><td>TCP</td><td>8080</td><td>Application port</td></tr>
+            <tr><td><strong>allow-health</strong></td><td>TCP</td><td>varies</td><td>LB health checks</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <div class="callout red" style="margin-top:0;">
+          <strong>Default:</strong> All incoming traffic is DENIED. You must explicitly allow what you need.
+        </div>
+        <div class="code-block" style="margin-top:16px;">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> compute firewall-rules \
+  create <span class="str">allow-http</span> \
+  <span class="flag">--network</span>=my-vpc \
+  <span class="flag">--allow</span> tcp:80 \
+  <span class="flag">--source-ranges</span>=0.0.0.0/0</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 INTERNAL VS EXTERNAL IP ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Internal vs <span class="hl">External IP</span></h2>
+    <p class="sub">Every public IP is an attack surface — minimize them</p>
+  </div>
+  <div class="slide-body">
+    <div class="split">
+      <div class="split-left">
+        <table>
+          <thead><tr><th>Type</th><th>Visible To</th><th>Use For</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Internal IP</strong></td><td>Only inside VPC</td><td>Service-to-service</td></tr>
+            <tr><td><strong>External IP</strong></td><td>Entire internet</td><td>Public-facing endpoints</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <table>
+          <thead><tr><th>Resource</th><th>IP Type</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Load Balancer</strong></td><td><span style="color:var(--blue)">External (public entry)</span></td></tr>
+            <tr><td><strong>App servers</strong></td><td><span style="color:var(--green)">Internal only</span></td></tr>
+            <tr><td><strong>Database</strong></td><td><span style="color:var(--green)">Internal only</span></td></tr>
+            <tr><td><strong>Cache/queues</strong></td><td><span style="color:var(--green)">Internal only</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="callout orange" style="margin-top:20px;">
+      <strong>Minimize external IPs.</strong> Every public IP is an attack surface.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 SERVICE COMMUNICATION ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Service-to-Service <span class="hl">Communication</span></h2>
+    <p class="sub">How microservices talk inside your VPC</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box good">
+        <div class="compare-head">Option 1: Internal HTTP (Sync)</div>
+        <div class="compare-body">
+          <div class="arrow-flow">
+            <div class="step">Order Service</div>
+            <div class="arr">&#8594;</div>
+            <div class="step grn">Payment Service</div>
+          </div>
+          <p style="margin-top:12px;">Direct, fast, synchronous via internal IP</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Option 2: Pub/Sub (Async)</div>
+        <div class="compare-body">
+          <div class="arrow-flow">
+            <div class="step">Order Service</div>
+            <div class="arr">&#8594;</div>
+            <div class="step org">Pub/Sub</div>
+            <div class="arr">&#8594;</div>
+            <div class="step grn">Payment Service</div>
+          </div>
+          <p style="margin-top:12px;">Decoupled, resilient, handles traffic spikes</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Prefer private communication + event-driven patterns.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 HANDS-ON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Hands-On: <span class="hl">Build a VPC</span></h2>
+    <p class="sub">Create VPC, subnet, firewall rule, and launch a VM</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <div class="ct">1. Create VPC</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">gcloud</span> compute networks create \
+  <span class="str">my-vpc</span> <span class="flag">--subnet-mode</span>=custom</pre>
+        </div>
+      </div>
+      <div class="card gb">
+        <div class="ct">2. Create Subnet</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">gcloud</span> compute networks subnets \
+  create <span class="str">app-subnet</span> \
+  <span class="flag">--network</span>=my-vpc \
+  <span class="flag">--range</span>=10.0.1.0/24 \
+  <span class="flag">--region</span>=asia-south1</pre>
+        </div>
+      </div>
+      <div class="card ob">
+        <div class="ct">3. Add Firewall Rule</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">gcloud</span> compute firewall-rules \
+  create <span class="str">allow-ssh</span> \
+  <span class="flag">--network</span>=my-vpc \
+  <span class="flag">--allow</span> tcp:22</pre>
+        </div>
+      </div>
+      <div class="card rb">
+        <div class="ct">4. Launch VM in VPC</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">gcloud</span> compute instances create \
+  <span class="str">app-vm</span> \
+  <span class="flag">--network</span>=my-vpc \
+  <span class="flag">--subnet</span>=app-subnet \
+  <span class="flag">--zone</span>=asia-south1-a</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World <span class="hl" style="color:var(--red)">Mistakes</span></h2>
+    <p class="sub">Networking mistakes have the worst consequences</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Mistake</th><th>Consequence</th><th>Prevention</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Making everything public</strong></td><td>Security breach</td><td>Private by default, public by exception</td></tr>
+        <tr><td><strong>No firewall rules</strong></td><td>Open system, anyone connects</td><td>Explicit allow rules only</td></tr>
+        <tr><td><strong>Wrong subnet planning</strong></td><td>IP conflicts, routing issues</td><td>Plan IP ranges upfront</td></tr>
+        <tr><td><strong>Direct DB exposure</strong></td><td>Data theft, ransomware</td><td>Always use private IP for databases</td></tr>
+        <tr><td><strong>Flat network</strong></td><td>Lateral movement in breaches</td><td>Separate subnets by function</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>VPC = the foundation</strong> of all cloud security</li>
+      <li><strong>Subnets</strong> = IP segmentation by region and function</li>
+      <li><strong>Firewalls</strong> = your control layer — deny by default, allow explicitly</li>
+      <li><strong>Design pattern:</strong> Public entry &rarr; Private backend (always)</li>
+      <li><strong>Networking = architecture backbone</strong> — get this right and everything else is easier</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Load Balancing &amp; Traffic Management</p>
+  <p style="font-size:1.05rem;opacity:0.5;">The gateway to high availability and global performance.</p>
+  <div class="next-box">Section 10 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

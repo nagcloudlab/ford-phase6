@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 3 — GCP Global Infrastructure</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 3</div>
+  <h1>Global<br>Infrastructure</h1>
+  <p class="tagline">Regions, Zones &amp; Designing for Failure</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 NOT JUST DATA CENTERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>GCP is <span class="hl">Not Just Data Centers</span></h2>
+    <p class="sub">It's a globally distributed system — the same backbone that serves billions</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card centered bb">
+        <div class="stat-num">40+</div>
+        <div class="ct">Regions</div>
+        <p>Across 6 continents worldwide</p>
+      </div>
+      <div class="card centered gb">
+        <div class="stat-num">120+</div>
+        <div class="ct">Zones</div>
+        <p>Independent data centers within regions</p>
+      </div>
+      <div class="card centered ob">
+        <div class="stat-num">&#x1F310;</div>
+        <div class="ct">Private Fiber</div>
+        <p>Subsea cables connecting everything</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>This is the same backbone that serves YouTube, Gmail &amp; Google Search to billions.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 REGIONS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Regions: <span class="hl">Where Your Data Lives</span></h2>
+    <p class="sub">A geographic location with multiple data centers</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card centered bb">
+        <span class="icon">🇮🇳</span>
+        <div class="ct"><code>asia-south1</code></div>
+        <p>Mumbai, India</p>
+      </div>
+      <div class="card centered bb">
+        <span class="icon">🇺🇸</span>
+        <div class="ct"><code>us-central1</code></div>
+        <p>Iowa, USA</p>
+      </div>
+      <div class="card centered bb">
+        <span class="icon">🇧🇪</span>
+        <div class="ct"><code>europe-west1</code></div>
+        <p>Belgium, Europe</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Latency</div><p class="fd">Users in India? Deploy in Mumbai, not Iowa.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Compliance</div><p class="fd">Banking data must stay in-country per regulations.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Isolation</div><p class="fd">Region failure ≠ entire system down.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 ZONES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Zones: <span class="hl">The Fault Isolation Unit</span></h2>
+    <p class="sub">An independent data center inside a region</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>Example:</strong> <code>asia-south1</code> has three zones</p>
+        <div class="arch-flow">
+          <div class="anode public">asia-south1 (Mumbai Region)</div>
+          <div class="adown">&#8595;&nbsp;&nbsp;&nbsp;&#8595;&nbsp;&nbsp;&nbsp;&#8595;</div>
+        </div>
+        <div class="cards c3" style="margin-top:8px;">
+          <div class="card centered gb">
+            <div class="ct">Zone A</div>
+            <p><code>asia-south1-a</code></p>
+          </div>
+          <div class="card centered gb">
+            <div class="ct">Zone B</div>
+            <p><code>asia-south1-b</code></p>
+          </div>
+          <div class="card centered gb">
+            <div class="ct">Zone C</div>
+            <p><code>asia-south1-c</code></p>
+          </div>
+        </div>
+      </div>
+      <div class="split-right">
+        <p><strong>Each Zone Has</strong></p>
+        <div class="cards">
+          <div class="card bb">
+            <div class="ct">Separate Power</div>
+            <p>Independent power supply</p>
+          </div>
+          <div class="card bb">
+            <div class="ct">Separate Network</div>
+            <p>Independent networking</p>
+          </div>
+          <div class="card bb">
+            <div class="ct">Independent Infra</div>
+            <p>Isolated hardware &amp; cooling</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>If one zone fails, the others keep running.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 REGION VS ZONE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Region vs Zone — <span class="hl">The Clear Picture</span></h2>
+    <p class="sub">Understanding the scope of each</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Feature</th><th>Region</th><th>Zone</th></tr></thead>
+      <tbody>
+        <tr><td><strong>What is it?</strong></td><td>Geographic area</td><td>Single data center</td></tr>
+        <tr><td><strong>Scope</strong></td><td>Country / State level</td><td>Building level</td></tr>
+        <tr><td><strong>Failure impact</strong></td><td>Large area affected</td><td>Small, contained</td></tr>
+        <tr><td><strong>How many?</strong></td><td>40+ globally</td><td>3–4 per region</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Remember:</strong> One Region = Multiple Zones. Zones are your building blocks for availability.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 ARCHITECTURE THAT FAILS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Architecture That <span class="hl" style="color:var(--red)">Fails</span></h2>
+    <p class="sub">Single zone deployment — the #1 beginner mistake</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode public">Your App</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode danger">asia-south1-a (ONLY)</div>
+    </div>
+    <div class="scenario-box">
+      <h3>What Happens When Zone-A Goes Down</h3>
+      <div class="cards c2">
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Power outage in Zone-A</strong><span>The single point of failure triggers</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Entire app goes DOWN</strong><span>No fallback, no redundancy</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Users see errors</strong><span>Timeouts, failed requests everywhere</span></div>
+        </div>
+        <div class="scenario-item">
+          <span class="dot-red">🔴</span>
+          <div><strong>Revenue lost</strong><span>Every minute of downtime costs money</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 ARCHITECTURE THAT SURVIVES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Architecture That <span class="hl">Survives</span></h2>
+    <p class="sub">Multi-zone deployment — the minimum standard for production</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode public">Load Balancer</div>
+      <div class="adown">&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;</div>
+    </div>
+    <div class="cards c2" style="margin-bottom:20px;">
+      <div class="card centered gb">
+        <span class="icon">🟢</span>
+        <div class="ct">Zone-A</div>
+        <p>App Instance (active)</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🟢</span>
+        <div class="ct">Zone-B</div>
+        <p>App Instance (active)</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Zone-A fails</div><p class="fd">Load Balancer routes ALL traffic to Zone-B automatically</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Users notice nothing</div><p class="fd">Seamless failover — zero downtime for your customers</p></div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Golden Rule:</strong> Always design for ZONE FAILURE.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 MULTI-REGION ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Multi-Region: <span class="hl">Enterprise-Grade Resilience</span></h2>
+    <p class="sub">Deploy across multiple regions for maximum availability</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card centered bb">
+        <span class="icon">🛡️</span>
+        <div class="ct">Disaster Recovery</div>
+        <p>Entire Mumbai region down? US region takes over.</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">⚡</span>
+        <div class="ct">Global Performance</div>
+        <p>India users → Mumbai. US users → Iowa. Low latency everywhere.</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">📜</span>
+        <div class="ct">Compliance</div>
+        <p>Data copies in approved jurisdictions per regulation.</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Benefit</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Maximum availability</strong></td><td>Higher infrastructure cost</td></tr>
+        <tr><td><strong>Global low latency</strong></td><td>More complex architecture</td></tr>
+        <tr><td><strong>True fault tolerance</strong></td><td>Data synchronization challenges</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 PRIVATE NETWORK ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>GCP's Secret Weapon: <span class="hl">The Private Network</span></h2>
+    <p class="sub">Google owns one of the world's largest private fiber networks</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card centered bb">
+        <span class="icon">🌊</span>
+        <div class="ct">Subsea Cables</div>
+        <p>Private fiber across oceans connecting continents</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🔗</span>
+        <div class="ct">Dedicated Fiber</div>
+        <p>Direct connections between all data centers</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">🔒</span>
+        <div class="ct">Private Routing</div>
+        <p>Traffic stays on Google's network, not public internet</p>
+      </div>
+    </div>
+    <div class="compare">
+      <div class="compare-box good">
+        <div class="compare-head">GCP Advantage</div>
+        <div class="compare-body">
+          <p><strong>Faster</strong> than public internet routing. <strong>More reliable</strong> connections. <strong>Lower latency</strong> between services.</p>
+        </div>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-head">Other Clouds</div>
+        <div class="compare-body">
+          <p>AWS and Azure rely more on public internet routing. GCP has a genuine network advantage.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 DECISION FRAMEWORK ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Architecture <span class="hl">Decision Framework</span></h2>
+    <p class="sub">When designing any system, ask these questions</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <table>
+          <thead><tr><th>Question</th><th>Decision</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Where are my users?</strong></td><td>Choose the nearest region</td></tr>
+            <tr><td><strong>How critical is uptime?</strong></td><td>Multi-zone (min) or multi-region</td></tr>
+            <tr><td><strong>Compliance needs?</strong></td><td>Region with data residency support</td></tr>
+            <tr><td><strong>What's my budget?</strong></td><td>Balance cost vs availability</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <p><strong>Example: Payment System</strong></p>
+        <div class="code-block">
+          <div class="lang">Architecture</div>
+          <pre><span class="flag">Primary:</span>  <span class="str">asia-south1</span> (Mumbai)
+          <span class="comment"># Multi-zone deployment</span>
+
+<span class="flag">DR:</span>       <span class="str">asia-south2</span> (Delhi)
+          <span class="comment"># Failover region</span>
+
+<span class="flag">Strategy:</span> <span class="cmd">Load balanced across zones</span>
+          <span class="comment"># Zero tolerance for downtime</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Region</strong> = location + legal compliance + latency optimization</li>
+      <li><strong>Zone</strong> = the fault isolation unit — always design around zone failure</li>
+      <li><strong>Multi-zone</strong> = minimum standard for any production system</li>
+      <li><strong>Multi-region</strong> = enterprise-grade, for mission-critical apps</li>
+      <li><strong>GCP's private network</strong> = real competitive advantage over other clouds</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Core GCP Services Overview</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Compute, Storage, Databases, Networking — choosing the right service for every use case.</p>
+  <div class="next-box">Section 4 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

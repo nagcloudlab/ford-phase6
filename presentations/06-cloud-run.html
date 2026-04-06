@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 6 — Cloud Run: The Modern Way to Deploy</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 6</div>
+  <h1>Cloud Run</h1>
+  <p class="tagline">Zero Infra. Auto-Scaling. Pay Per Request.</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 THE PROBLEM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Problem <span class="hl">Cloud Run Solves</span></h2>
+    <p class="sub">With VMs, you're still managing servers</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card rb">
+        <span class="icon">🔧</span>
+        <div class="ct">Patching &amp; Config</div>
+        <p>OS patching, networking, manual scaling — all on you.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">💸</span>
+        <div class="ct">Paying When Idle</div>
+        <p>VM runs 24/7 even when nobody is using your app.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">⏳</span>
+        <div class="ct">Infra Over Features</div>
+        <p>Time spent on infrastructure instead of building products.</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Cloud Run flips the script:</strong> You give it a Docker container. It handles EVERYTHING else.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 IN ONE SENTENCE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Run <span class="hl">in One Sentence</span></h2>
+    <p class="sub">"Run containers without managing servers."</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box good">
+        <div class="compare-head">You Provide</div>
+        <div class="compare-body">
+          <p style="font-size:1.3rem;text-align:center;"><strong>A Docker image</strong> (your app)</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Google Handles</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Infrastructure</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Auto-scaling</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Load balancing</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Networking &amp; SSL/HTTPS</strong></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Just deploy and forget infra.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 HOW IT WORKS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>How It Works <span class="hl">Under the Hood</span></h2>
+    <p class="sub">The magic of scaling from zero</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">User Request</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Google's Global Load Balancer</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Cloud Run Service</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--green);background:var(--green-light);color:var(--green-dark);">Container Instance (auto-created on demand)</div>
+    </div>
+    <table>
+      <thead><tr><th>Traffic</th><th>Instances</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>0 users</td><td>0 instances</td><td><strong style="color:var(--green)">₹0</strong></td></tr>
+        <tr><td>10 users</td><td>1 instance</td><td>Minimal</td></tr>
+        <tr><td>10,000 users</td><td>20 instances</td><td>Scales automatically</td></tr>
+        <tr><td>Back to 0</td><td>0 instances</td><td><strong style="color:var(--green)">₹0 again</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 KEY CONCEPTS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Concepts</span></h2>
+    <p class="sub">The building blocks of Cloud Run</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <span class="icon">🔧</span>
+        <div class="ct">Service</div>
+        <p>Your deployed application (e.g., <code>payment-service</code>, <code>order-service</code>)</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">🔄</span>
+        <div class="ct">Revision</div>
+        <p>Every deployment creates a new version — easy rollbacks</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">📦</span>
+        <div class="ct">Container</div>
+        <p>Your Docker image — the actual running application</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">⚡</span>
+        <div class="ct">Concurrency</div>
+        <p>Default: 80 requests/instance. Higher = fewer instances = lower cost</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 COMPARISON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Run vs VM vs GKE</h2>
+    <p class="sub">The real comparison — choose based on your needs</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Feature</th><th>VM</th><th>Cloud Run</th><th>GKE</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Infra management</strong></td><td>High (you do it all)</td><td><strong style="color:var(--green)">None</strong></td><td>Medium</td></tr>
+        <tr><td><strong>Scaling</strong></td><td>Manual</td><td><strong style="color:var(--green)">Automatic</strong></td><td>Configurable</td></tr>
+        <tr><td><strong>Complexity</strong></td><td>Medium</td><td><strong style="color:var(--green)">Very Low</strong></td><td>High</td></tr>
+        <tr><td><strong>Cost model</strong></td><td>Always on</td><td><strong style="color:var(--green)">Per request</strong></td><td>Cluster always on</td></tr>
+        <tr><td><strong>Best for</strong></td><td>Legacy apps</td><td><strong style="color:var(--green)">Microservices</strong></td><td>Large-scale systems</td></tr>
+      </tbody>
+    </table>
+    <div class="callout green">
+      <strong>Cloud Run is the default choice</strong> unless you have a specific reason for VM or GKE.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 DEPLOY SPRING BOOT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Deploy Spring Boot to <span class="hl">Cloud Run</span></h2>
+    <p class="sub">Four steps — from code to production URL</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <div class="ct">1. Create Dockerfile</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">FROM</span> <span class="str">openjdk:17-jdk-slim</span>
+<span class="cmd">COPY</span> target/app.jar app.jar
+<span class="cmd">EXPOSE</span> <span class="str">8080</span>
+<span class="cmd">ENTRYPOINT</span> [<span class="str">"java"</span>, <span class="str">"-jar"</span>, <span class="str">"/app.jar"</span>]</pre>
+        </div>
+      </div>
+      <div class="card gb">
+        <div class="ct">2. Build &amp; Push Image</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">docker</span> build -t <span class="str">gcr.io/PROJECT/myapp</span> .
+<span class="cmd">docker</span> push <span class="str">gcr.io/PROJECT/myapp</span></pre>
+        </div>
+      </div>
+      <div class="card ob">
+        <div class="ct">3. Deploy</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">gcloud</span> run deploy <span class="str">myapp</span> \
+  <span class="flag">--image</span> gcr.io/PROJECT/myapp \
+  <span class="flag">--region</span> asia-south1</pre>
+        </div>
+      </div>
+      <div class="card" style="border-left:4px solid var(--green);">
+        <div class="ct">4. Access Your App</div>
+        <p style="font-size:1.2rem;margin-top:8px;"><code>https://myapp-abc123.a.run.app</code></p>
+        <p><strong>No servers. No config. Just a URL.</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 AUTO-SCALING & COLD START ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Auto-Scaling &amp; <span class="hl">Cold Start</span></h2>
+    <p class="sub">How scaling works and the one gotcha to know</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>How Scaling Decisions Happen</strong></p>
+        <div class="features">
+          <div class="feat">
+            <div class="num">1</div>
+            <div><div class="ft">Monitor</div><p class="fd">Cloud Run watches incoming request rate</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">2</div>
+            <div><div class="ft">Compare</div><p class="fd">Checks against concurrency setting (default: 80)</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">3</div>
+            <div><div class="ft">Scale Up</div><p class="fd">Spins up new instances when needed</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">4</div>
+            <div><div class="ft">Scale Down</div><p class="fd">Back to zero when traffic stops</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="scenario-box">
+          <h3>The Cold Start Problem</h3>
+          <p><strong>What:</strong> First request has extra delay (~1–5s for Java/Spring Boot)</p>
+          <p style="margin-top:12px;"><strong>Solutions:</strong></p>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Set <code>min-instances=1</code></strong> <span>— keeps one instance warm</span></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Optimize startup time</strong> <span>— lazy loading, smaller images</span></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>GraalVM native images</strong> <span>— sub-second boot times</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 SECURITY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Security <span class="hl">Options</span></h2>
+    <p class="sub">Control who can access your Cloud Run services</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Mode</th><th>Who Can Access?</th><th>Use Case</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Allow unauthenticated</strong></td><td>Anyone with the URL</td><td>Public APIs, websites</td></tr>
+        <tr><td><strong>Require authentication</strong></td><td>Only IAM-authorized users/services</td><td>Internal microservices</td></tr>
+        <tr><td><strong>API Gateway</strong></td><td>Controlled access with API keys</td><td>External partner APIs</td></tr>
+      </tbody>
+    </table>
+    <div class="compare">
+      <div class="compare-box good">
+        <div class="compare-head">Perfect For</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Spring Boot microservices</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>REST APIs &amp; GraphQL</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Event-driven apps (Pub/Sub)</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Backend for web/mobile</strong></div></div>
+        </div>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-head">Avoid When</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Long-running jobs (&gt;60 min)</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Need full OS-level control</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Stateful apps (persistent local storage)</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>WebSocket connections</strong></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World <span class="hl" style="color:var(--red)">Mistakes</span></h2>
+    <p class="sub">Common pitfalls when getting started with Cloud Run</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Mistake</th><th>Impact</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Not containerizing properly</strong></td><td>App won't start</td><td>Test Docker image locally first</td></tr>
+        <tr><td><strong>Ignoring cold start</strong></td><td>Slow first requests</td><td>Set <code>min-instances=1</code> for prod</td></tr>
+        <tr><td><strong>Hardcoding config values</strong></td><td>Can't change without redeploy</td><td>Use environment variables</td></tr>
+        <tr><td><strong>Jumping to GKE too early</strong></td><td>Unnecessary complexity &amp; cost</td><td>Start with Cloud Run, migrate if needed</td></tr>
+        <tr><td><strong>No health check endpoint</strong></td><td>Can't monitor service health</td><td>Add <code>/health</code> endpoint</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Cloud Run = default compute choice</strong> for modern applications</li>
+      <li><strong>Zero infra management</strong> &rarr; focus 100% on business logic</li>
+      <li><strong>Auto-scaling</strong> from 0 to thousands = biggest advantage</li>
+      <li><strong>Containerization is a mandatory skill</strong> — learn Docker well</li>
+      <li><strong>Cost-optimized by design</strong> — pay nothing when idle</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Cloud Storage: Object Storage Deep Dive</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Store and serve files, images, backups at scale.</p>
+  <div class="next-box">Section 7 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

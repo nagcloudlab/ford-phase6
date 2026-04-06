@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 8 — Cloud SQL: Managed Databases</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 8</div>
+  <h1>Cloud SQL</h1>
+  <p class="tagline">Transactions, Reliability &amp; Zero DBA Headaches</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 THE DILEMMA ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Database <span class="hl">Dilemma</span></h2>
+    <p class="sub">Your app needs a relational database — two options</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare">
+      <div class="compare-box bad">
+        <div class="compare-head">Option A: Install on VM (The Hard Way)</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Install MySQL/PostgreSQL manually</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Configure replication yourself</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Manage backups, patching, security</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Handle crash recovery at 3 AM</strong></div></div>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Option B: Cloud SQL (The Smart Way)</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Managed by Google</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Automated backups &amp; failover</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Patching handled for you</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Focus on schema, queries &amp; logic</strong></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Production rule: Always use managed databases.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 WHAT IS CLOUD SQL ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is <span class="hl">Cloud SQL?</span></h2>
+    <p class="sub">Fully managed relational database service on GCP</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box good">
+        <div class="compare-head">You Focus On</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Database schema design</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Writing queries</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Transaction logic</strong></div></div>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Google Handles</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Infrastructure &amp; hardware</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Automated daily backups</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>OS &amp; DB engine patching</strong></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>HA failover &amp; monitoring</strong></div></div>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Engine</th><th>Best For</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PostgreSQL</strong></td><td>Modern apps, advanced features</td><td><strong style="color:var(--green)">Recommended</strong></td></tr>
+        <tr><td><strong>MySQL</strong></td><td>Legacy apps, wide compatibility</td><td>Good choice</td></tr>
+        <tr><td><strong>SQL Server</strong></td><td>Microsoft ecosystem</td><td>Specific needs</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 ARCHITECTURE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud SQL <span class="hl">Architecture</span></h2>
+    <p class="sub">Primary, replicas, and automatic failover</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Your App (Cloud Run / VM)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Cloud SQL Instance</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Primary Database (all writes)</div>
+      <div class="adown">&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;</div>
+    </div>
+    <div class="cards c2">
+      <div class="card centered bb">
+        <span class="icon">📖</span>
+        <div class="ct">Read Replica</div>
+        <p>Copy for read-heavy queries — analytics, reports, dashboards</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🛡️</span>
+        <div class="ct">HA Standby</div>
+        <p>Automatic failover if primary goes down — zero manual intervention</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 CONNECTIVITY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Connectivity: <span class="hl">How Your App Talks to the DB</span></h2>
+    <p class="sub">Three methods — from quick testing to production-grade</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Method</th><th>Security</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Public IP</strong></td><td><span style="color:var(--red)">Low — exposed to internet</span></td><td>Quick testing only</td></tr>
+        <tr><td><strong>Private IP</strong></td><td><span style="color:var(--orange)">High — inside VPC only</span></td><td>Production recommended</td></tr>
+        <tr><td><strong>Cloud SQL Proxy</strong></td><td><span style="color:var(--green)">Highest — encrypted tunnel</span></td><td>Best practice</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Recommended Production Setup</strong></p>
+    <div class="arrow-flow">
+      <div class="step">Cloud Run</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">SQL Proxy</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">Cloud SQL (Private IP)</div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>No IP exposure. Encrypted connection. IAM-authenticated.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 HANDS-ON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Hands-On: <span class="hl">Set Up Cloud SQL</span></h2>
+    <p class="sub">Create an instance and start querying</p>
+  </div>
+  <div class="slide-body">
+    <div class="split">
+      <div class="split-left">
+        <p><strong>Create Instance</strong></p>
+        <div class="features">
+          <div class="feat">
+            <div class="num">1</div>
+            <div><div class="ft">Navigate</div><p class="fd">SQL &rarr; Create Instance</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">2</div>
+            <div><div class="ft">Choose PostgreSQL</div><p class="fd">Recommended engine</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">3</div>
+            <div><div class="ft">Configure</div><p class="fd">Name, region, password</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">4</div>
+            <div><div class="ft">Create</div><p class="fd">Takes ~5 minutes</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="split-right">
+        <p><strong>Create Database &amp; Table</strong></p>
+        <div class="code-block">
+          <div class="lang">SQL</div>
+          <pre><span class="cmd">CREATE DATABASE</span> <span class="str">myapp</span>;
+
+<span class="cmd">CREATE TABLE</span> <span class="str">users</span> (
+  id    <span class="flag">SERIAL PRIMARY KEY</span>,
+  name  <span class="flag">VARCHAR(100)</span>,
+  email <span class="flag">VARCHAR(100)</span>
+);
+
+<span class="cmd">INSERT INTO</span> <span class="str">users</span> (name, email)
+<span class="cmd">VALUES</span> (<span class="str">'Nag'</span>, <span class="str">'nag@test.com'</span>);</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 SPRING BOOT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Spring Boot <span class="hl">Integration</span></h2>
+    <p class="sub">Connect your Java app to Cloud SQL</p>
+  </div>
+  <div class="slide-body">
+    <div class="split">
+      <div class="split-left">
+        <p><strong>application.properties</strong></p>
+        <div class="code-block">
+          <div class="lang">properties</div>
+          <pre><span class="flag">spring.datasource.url</span>=<span class="str">jdbc:postgresql://HOST:5432/myapp</span>
+<span class="flag">spring.datasource.username</span>=<span class="str">postgres</span>
+<span class="flag">spring.datasource.password</span>=<span class="str">yourpassword</span>
+<span class="flag">spring.jpa.hibernate.ddl-auto</span>=<span class="str">update</span></pre>
+        </div>
+        <p style="margin-top:16px;"><strong>Entity</strong></p>
+        <div class="code-block">
+          <div class="lang">Java</div>
+          <pre><span class="cmd">@Entity</span>
+<span class="flag">public class</span> <span class="str">User</span> {
+    <span class="cmd">@Id @GeneratedValue</span>
+    <span class="flag">private</span> Long id;
+    <span class="flag">private</span> String name;
+    <span class="flag">private</span> String email;
+}</pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <p><strong>Production Tips</strong></p>
+        <div class="cards">
+          <div class="card gb">
+            <div class="ct">HikariCP</div>
+            <p>Connection pooling — Spring Boot default. Essential for performance.</p>
+          </div>
+          <div class="card bb">
+            <div class="ct">Cloud SQL Java Connector</div>
+            <p>Secure auth without managing SSL certs manually.</p>
+          </div>
+          <div class="card rb">
+            <div class="ct">Secret Manager</div>
+            <p>Never hardcode passwords — use Secret Manager for credentials.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 TRANSACTIONS / ACID ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Transactions: <span class="hl">The Heart of Financial Systems</span></h2>
+    <p class="sub">Why relational databases are mandatory for money</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:20px;">
+      <div class="step">Debit Sender (-₹500)</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Credit Receiver (+₹500)</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">Commit or Rollback</div>
+    </div>
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Without Transactions</div>
+        <div class="compare-body">
+          <p>Step 2 fails &rarr; Sender lost ₹500, receiver got nothing. <strong>Money vanished.</strong></p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">With ACID Transactions</div>
+        <div class="compare-body">
+          <p>Step 2 fails &rarr; Both steps rollback. <strong>Nobody loses money.</strong></p>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Atomicity</strong></td><td>All or nothing — no partial updates</td></tr>
+        <tr><td><strong>Consistency</strong></td><td>DB always in valid state</td></tr>
+        <tr><td><strong>Isolation</strong></td><td>Concurrent transactions don't interfere</td></tr>
+        <tr><td><strong>Durability</strong></td><td>Committed data survives crashes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 SCALING & BACKUPS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Scaling &amp; <span class="hl">Backup Strategies</span></h2>
+    <p class="sub">Grow your database and protect your data</p>
+  </div>
+  <div class="slide-body">
+    <div class="split">
+      <div class="split-left">
+        <p><strong>Scaling Strategies</strong></p>
+        <table>
+          <thead><tr><th>Strategy</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Vertical scaling</strong></td><td>Quick fix — increase CPU/RAM</td></tr>
+            <tr><td><strong>Read replicas</strong></td><td>Read-heavy workloads</td></tr>
+            <tr><td><strong>Connection pooling</strong></td><td>Many app instances</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <p><strong>Backups &amp; Recovery</strong></p>
+        <div class="cards">
+          <div class="card gb">
+            <div class="ct">Automated Backups</div>
+            <p>Daily, retained for 7 days</p>
+          </div>
+          <div class="card bb">
+            <div class="ct">Point-in-Time Recovery</div>
+            <p>Restore to any second in last 7 days</p>
+          </div>
+          <div class="card ob">
+            <div class="ct">On-Demand Backups</div>
+            <p>Before risky changes — manual safety net</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World <span class="hl" style="color:var(--red)">Mistakes</span></h2>
+    <p class="sub">Common database pitfalls in production</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Mistake</th><th>Impact</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Public IP in production</strong></td><td>Database exposed to internet</td><td>Use private IP + SQL Proxy</td></tr>
+        <tr><td><strong>No automated backups</strong></td><td>Data loss on failure</td><td>Enable automated backups</td></tr>
+        <tr><td><strong>Too many DB connections</strong></td><td>Database crashes</td><td>Use connection pooling</td></tr>
+        <tr><td><strong>No read replicas</strong></td><td>Prod DB slowed by reports</td><td>Add read replica for analytics</td></tr>
+        <tr><td><strong>Hardcoding credentials</strong></td><td>Security vulnerability</td><td>Use Secret Manager</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Cloud SQL = default relational DB</strong> for GCP applications</li>
+      <li><strong>PostgreSQL</strong> is the recommended engine</li>
+      <li><strong>Always use:</strong> Private IP + Cloud SQL Proxy in production</li>
+      <li><strong>Connection pooling</strong> is mandatory, not optional</li>
+      <li><strong>Transactions = the core</strong> of financial &amp; business-critical systems</li>
+      <li><strong>Database design impacts everything</strong> — get it right early</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>VPC &amp; Networking</p>
+  <p style="font-size:1.05rem;opacity:0.5;">The security backbone of your cloud architecture — where everything connects.</p>
+  <div class="next-box">Section 9 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

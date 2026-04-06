@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 4 — Core GCP Services Overview</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 4</div>
+  <h1>Core GCP<br>Services Overview</h1>
+  <p class="tagline">Choosing the Right Tool for Every Job</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 ARCHITECT'S DILEMMA ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Architect's <span class="hl">Dilemma</span></h2>
+    <p class="sub">GCP has 200+ services — the real skill is knowing which one to pick</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card centered rb">
+        <div class="stat-num">200+</div>
+        <div class="ct">GCP Services</div>
+        <p>Too many to learn all at once</p>
+      </div>
+      <div class="card centered gb">
+        <div class="stat-num">5</div>
+        <div class="ct">Categories That Matter</div>
+        <p>Master these and you can build anything</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Category</th><th>Purpose</th><th>Key Question</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Compute</strong></td><td>Run your application</td><td>Where should my app live?</td></tr>
+        <tr><td><strong>Storage</strong></td><td>Store files &amp; assets</td><td>Where do my files go?</td></tr>
+        <tr><td><strong>Databases</strong></td><td>Store structured data</td><td>Where does my data live?</td></tr>
+        <tr><td><strong>Networking</strong></td><td>Connect everything</td><td>How do services talk?</td></tr>
+        <tr><td><strong>Messaging</strong></td><td>Async communication</td><td>How do I decouple services?</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 COMPUTE SERVICES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Compute Services: <span class="hl">Where Your App Runs</span></h2>
+    <p class="sub">Four options — from full control to fully managed</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <span class="icon">🖥️</span>
+        <div class="ct">Compute Engine (VMs)</div>
+        <p>Full control over OS, runtime, configs.<br><strong>Best for:</strong> Legacy apps, custom setups, learning infra.</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">📦</span>
+        <div class="ct">App Engine (PaaS)</div>
+        <p>Deploy code, no server management.<br><strong>Best for:</strong> Simple web apps, prototypes.</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">🚀</span>
+        <div class="ct">Cloud Run (Serverless)</div>
+        <p>Docker containers with zero infra management.<br><strong>Best for:</strong> Microservices, REST APIs, modern apps.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">☸️</span>
+        <div class="ct">GKE (Kubernetes)</div>
+        <p>Full Kubernetes orchestration at scale.<br><strong>Best for:</strong> Large-scale microservices, complex systems.</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Default modern choice: Cloud Run</strong> — unless you have a specific reason for something else.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 COMPUTE DECISION TABLE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Compute <span class="hl">Decision Table</span></h2>
+    <p class="sub">Match your situation to the right service</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Your Situation</th><th>Choose This</th></tr></thead>
+      <tbody>
+        <tr><td>Need full OS control</td><td><strong style="color:var(--blue)">Compute Engine</strong> (VM)</td></tr>
+        <tr><td>Simple web app, no infra worry</td><td><strong style="color:var(--blue)">App Engine</strong></td></tr>
+        <tr><td>Microservices &amp; REST APIs</td><td><strong style="color:var(--blue)">Cloud Run</strong></td></tr>
+        <tr><td>Complex orchestration at scale</td><td><strong style="color:var(--blue)">GKE</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="arrow-flow" style="margin-top:28px;">
+      <div class="step">Full Control</div>
+      <div class="arr">&#8594;</div>
+      <div class="step">Managed</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Serverless</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">Orchestrated</div>
+    </div>
+    <div class="callout orange" style="margin-top:20px;">
+      <strong>Start with Cloud Run.</strong> Graduate to GKE only when you truly need orchestration at scale.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 STORAGE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Storage: <span class="hl">Where Your Files Live</span></h2>
+    <p class="sub">Cloud Storage — store images, videos, PDFs, backups, any file</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Storage Class</th><th>Use Case</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Standard</strong></td><td>Frequently accessed files</td><td>Highest</td></tr>
+        <tr><td><strong>Nearline</strong></td><td>Monthly access (reports)</td><td>Medium</td></tr>
+        <tr><td><strong>Coldline</strong></td><td>Rare access (compliance)</td><td>Low</td></tr>
+        <tr><td><strong>Archive</strong></td><td>Almost never accessed</td><td>Lowest</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3">
+      <div class="card centered bb">
+        <span class="icon">🖼️</span>
+        <div class="ct">Standard</div>
+        <p>User profile images</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">💾</span>
+        <div class="ct">Coldline</div>
+        <p>Monthly backups</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🗄️</span>
+        <div class="ct">Archive</div>
+        <p>7-year audit logs</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 DATABASES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Databases: <span class="hl">Where Your Data Lives</span></h2>
+    <p class="sub">Three services for three very different needs</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card centered bb">
+        <span class="icon">🏦</span>
+        <div class="ct">Cloud SQL</div>
+        <p>Managed MySQL / PostgreSQL.<br><strong>Best for:</strong> Transactions, structured data, banking.</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">📄</span>
+        <div class="ct">Firestore</div>
+        <p>NoSQL document database.<br><strong>Best for:</strong> Real-time apps, flexible schema, mobile.</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">📊</span>
+        <div class="ct">BigQuery</div>
+        <p>Analytics data warehouse.<br><strong>Best for:</strong> Large-scale analytics, reporting.</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Need</th><th>Service</th></tr></thead>
+      <tbody>
+        <tr><td>ACID transactions (payments, orders)</td><td><strong style="color:var(--blue)">Cloud SQL</strong></td></tr>
+        <tr><td>Flexible, real-time data</td><td><strong style="color:var(--blue)">Firestore</strong></td></tr>
+        <tr><td>Analytics on massive datasets</td><td><strong style="color:var(--blue)">BigQuery</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 NETWORKING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Networking: <span class="hl">The Backbone</span></h2>
+    <p class="sub">How services connect and communicate securely</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card centered bb">
+        <span class="icon">🌐</span>
+        <div class="ct">VPC</div>
+        <p>Your private network in the cloud. Isolated, secure, configurable.</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">⚖️</span>
+        <div class="ct">Load Balancer</div>
+        <p>Distributes traffic across instances for high availability.</p>
+      </div>
+      <div class="card centered rb">
+        <span class="icon">🛡️</span>
+        <div class="ct">Firewall</div>
+        <p>Controls who can access what — your security perimeter.</p>
+      </div>
+    </div>
+    <div class="arch-flow">
+      <div class="anode public">Public Entry Point (Load Balancer)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Private VPC (Your Services)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode danger">Firewall Rules (Access Control)</div>
+    </div>
+    <div class="callout orange" style="margin-top:16px;">
+      <strong>Golden rule:</strong> Public entry point (Load Balancer) &rarr; Private everything else.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 MESSAGING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Messaging: <span class="hl">Decoupling Services</span></h2>
+    <p class="sub">Pub/Sub — the event bus for asynchronous communication</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:24px;">
+      <div class="step">Order Service</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Pub/Sub</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">Payment Service</div>
+    </div>
+    <div class="cards c2">
+      <div class="card gb">
+        <span class="icon">⚡</span>
+        <div class="ct">Async Communication</div>
+        <p>Services don't wait for each other — fire and forget.</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">📈</span>
+        <div class="ct">Handles Traffic Spikes</div>
+        <p>Messages queue up gracefully — no service overwhelm.</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">🔗</span>
+        <div class="ct">Event-Driven Architecture</div>
+        <p>Services react to events — loosely coupled, independently deployable.</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">🛡️</span>
+        <div class="ct">Reliability</div>
+        <p>Messages are persisted — no data loss even if a consumer is down.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>When to use:</strong> Anytime services shouldn't wait for each other.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 REAL ARCHITECTURE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Putting It All Together: <span class="hl">Real Architecture</span></h2>
+    <p class="sub">A payment system — each service has one clear responsibility</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">User Request</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Cloud Load Balancer (traffic entry)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Cloud Run (API — auto-scaling)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark);">Cloud SQL (transactions — ACID)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--orange);background:var(--orange-light);color:#b45309;">Pub/Sub (async events)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--green);background:var(--green-light);color:var(--green-dark);">BigQuery (analytics &amp; reporting)</div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Each service has ONE clear responsibility.</strong> This is how production systems are built.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 COMMON MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Common <span class="hl" style="color:var(--red)">Mistakes</span> to Avoid</h2>
+    <p class="sub">Patterns that seem reasonable but cause real problems</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Mistake</th><th>Why It's Wrong</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Using VMs for everything</strong></td><td>Old-school mindset, high ops burden</td><td>Use Cloud Run for microservices</td></tr>
+        <tr><td><strong>Kubernetes too early</strong></td><td>Overengineering for small apps</td><td>Start with Cloud Run, graduate to GKE</td></tr>
+        <tr><td><strong>Storing files in database</strong></td><td>Wrong tool, bad performance</td><td>Use Cloud Storage for files</td></tr>
+        <tr><td><strong>Ignoring async messaging</strong></td><td>Tight coupling, fragile system</td><td>Use Pub/Sub to decouple</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Compute choice</strong> = the biggest architectural decision you'll make</li>
+      <li><strong>Cloud Run</strong> = your default for modern apps — serverless, auto-scaling, pay-per-request</li>
+      <li><strong>Storage ≠ Database</strong> — keep this separation clear in your architecture</li>
+      <li><strong>Pub/Sub</strong> enables resilient, event-driven systems — decouple everything</li>
+      <li><strong>Think like an architect:</strong> choose services by need, not by popularity</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Compute Engine: VMs Deep Dive</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Hands-on with real infrastructure — understanding cloud from the ground up.</p>
+  <div class="next-box">Section 5 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

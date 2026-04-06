@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 5 — Compute Engine: VMs Deep Dive</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 5</div>
+  <h1>Compute Engine<br>VMs Deep Dive</h1>
+  <p class="tagline">Understanding Cloud from the Ground Up</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 WHY START WITH VMS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why Start with <span class="hl">VMs?</span></h2>
+    <p class="sub">Even if you'll use Cloud Run in production, VMs teach you the fundamentals</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card centered bb">
+        <span class="icon">🏗️</span>
+        <div class="ct">How Infra Works</div>
+        <p>Understand how cloud infrastructure actually operates</p>
+      </div>
+      <div class="card centered gb">
+        <span class="icon">🔍</span>
+        <div class="ct">Under the Hood</div>
+        <p>See what's happening beneath managed services</p>
+      </div>
+      <div class="card centered ob">
+        <span class="icon">🎛️</span>
+        <div class="ct">Full Control</div>
+        <p>Know when you truly need OS-level access</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>VMs are the foundation.</strong> Everything else is abstraction built on top.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 WHAT IS A VM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is a VM, <span class="hl">Really?</span></h2>
+    <p class="sub">A virtual computer running inside Google's data center</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Physical Server (Google's Hardware)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Hypervisor (Virtualization Layer)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Virtual Machine (Your Instance)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark);">Operating System (Linux / Windows)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--green);background:var(--green-light);color:var(--green-dark);">Your Application (Spring Boot, Node, etc.)</div>
+    </div>
+    <div class="callout green">
+      <strong>You get a full computer</strong> — CPU, RAM, disk, network — without owning any hardware.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 VM BUILDING BLOCKS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>VM <span class="hl">Building Blocks</span></h2>
+    <p class="sub">The four components you configure when creating a VM</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>1. Machine Type (CPU + RAM)</strong></p>
+        <table>
+          <thead><tr><th>Type</th><th>Specs</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td><code>e2-micro</code></td><td>0.25 vCPU, 1GB</td><td>Free tier, testing</td></tr>
+            <tr><td><code>e2-standard-2</code></td><td>2 vCPU, 8GB</td><td>Small apps</td></tr>
+            <tr><td><code>e2-standard-8</code></td><td>8 vCPU, 32GB</td><td>Production</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <div class="cards">
+          <div class="card bb">
+            <div class="ct">2. Boot Disk</div>
+            <p><strong>Standard</strong> (HDD) or <strong>SSD</strong> (faster, for prod)</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">3. OS Image</div>
+            <p>Ubuntu, Debian, CentOS, Windows Server</p>
+          </div>
+          <div class="card ob">
+            <div class="ct">4. Networking</div>
+            <p>Internal IP (always) + External IP (optional)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 VM LIFECYCLE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>VM Lifecycle: <span class="hl">Create &rarr; Use &rarr; Pay</span></h2>
+    <p class="sub">Understanding when you're billed is critical</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:24px;">
+      <div class="step">Create</div>
+      <div class="arr">&#8594;</div>
+      <div class="step grn">Running</div>
+      <div class="arr">&#8594;</div>
+      <div class="step org">Stopped</div>
+      <div class="arr">&#8594;</div>
+      <div class="step" style="background:var(--red-light);color:var(--red-dark);">Deleted</div>
+    </div>
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>State</th><th>CPU Billed?</th><th>Disk Billed?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Running</strong></td><td>Yes</td><td>Yes</td></tr>
+        <tr><td><strong>Stopped</strong></td><td>No</td><td><strong style="color:var(--red)">Yes!</strong></td></tr>
+        <tr><td><strong>Deleted</strong></td><td>No</td><td>No</td></tr>
+      </tbody>
+    </table>
+    <div class="callout red">
+      <strong>Forgetting to stop/delete VMs = the most common billing mistake.</strong> Stopped VMs still pay for disk.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 HANDS-ON CREATE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Hands-On: <span class="hl">Create Your First VM</span></h2>
+    <p class="sub">Two ways — Console UI or command line</p>
+  </div>
+  <div class="slide-body">
+    <div class="split">
+      <div class="split-left">
+        <p><strong>Via Console</strong></p>
+        <div class="features">
+          <div class="feat">
+            <div class="num">1</div>
+            <div><div class="ft">Navigate</div><p class="fd">Compute Engine &rarr; VM Instances</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">2</div>
+            <div><div class="ft">Click Create Instance</div><p class="fd">Name: <code>my-first-vm</code></p></div>
+          </div>
+          <div class="feat">
+            <div class="num">3</div>
+            <div><div class="ft">Configure</div><p class="fd">Region, Zone, Machine type, OS</p></div>
+          </div>
+          <div class="feat">
+            <div class="num">4</div>
+            <div><div class="ft">Create</div><p class="fd">Ready in ~30 seconds</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="split-right">
+        <p><strong>Via Command Line</strong></p>
+        <div class="code-block">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> compute instances create <span class="str">my-first-vm</span> \
+  <span class="flag">--zone</span>=asia-south1-a \
+  <span class="flag">--machine-type</span>=e2-micro \
+  <span class="flag">--image-family</span>=ubuntu-2204-lts \
+  <span class="flag">--image-project</span>=ubuntu-os-cloud</pre>
+        </div>
+        <div class="callout green" style="margin-top:12px;">
+          <strong>Your VM is ready in ~30 seconds.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 HANDS-ON SSH & DEPLOY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Hands-On: <span class="hl">SSH &amp; Deploy</span></h2>
+    <p class="sub">Connect, install, run, and access your application</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <div class="ct">1. Connect via SSH</div>
+        <p>Click the <strong>SSH</strong> button in Console — browser-based terminal</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">2. Install Java</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">sudo</span> apt update
+<span class="cmd">sudo</span> apt install <span class="str">openjdk-17-jdk</span> -y</pre>
+        </div>
+      </div>
+      <div class="card ob">
+        <div class="ct">3. Run Your App</div>
+        <div class="code-block" style="margin-top:8px;">
+          <pre><span class="cmd">java</span> <span class="flag">-jar</span> <span class="str">app.jar</span></pre>
+        </div>
+      </div>
+      <div class="card rb">
+        <div class="ct">4. Open Firewall &amp; Access</div>
+        <p>Allow TCP:8080 in VPC Firewall, then visit <code>http://EXTERNAL-IP:8080</code></p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 WHEN TO USE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>When to Use VMs <span class="hl">(and When NOT To)</span></h2>
+    <p class="sub">Choose the right tool for the job</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare">
+      <div class="compare-box good">
+        <div class="compare-head">Use VMs When</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Full OS control</strong> <span>— custom kernel, specific drivers</span></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Legacy applications</strong> <span>— can't be containerized</span></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Custom dependencies</strong> <span>— need specific setup</span></div></div>
+          <div class="scenario-item"><span class="dot-red">✅</span><div><strong>Learning infra</strong> <span>— understanding fundamentals</span></div></div>
+        </div>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-head">Avoid VMs When</div>
+        <div class="compare-body">
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Building microservices</strong> <span>&rarr; use Cloud Run</span></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Want auto-scaling</strong> <span>&rarr; VMs require manual scaling</span></div></div>
+          <div class="scenario-item"><span class="dot-red">🔴</span><div><strong>Hate maintenance</strong> <span>&rarr; VMs need OS patching</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 VM VS CLOUD RUN ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>VM vs Cloud Run: <span class="hl">The Honest Comparison</span></h2>
+    <p class="sub">Side by side — so you can choose with confidence</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Feature</th><th>VM (Compute Engine)</th><th>Cloud Run</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Infra management</strong></td><td>You manage everything</td><td><strong style="color:var(--green)">Google manages it</strong></td></tr>
+        <tr><td><strong>Scaling</strong></td><td>Manual (add more VMs)</td><td><strong style="color:var(--green)">Automatic (0 to N)</strong></td></tr>
+        <tr><td><strong>Cost model</strong></td><td>Always running = always paying</td><td><strong style="color:var(--green)">Pay per request</strong></td></tr>
+        <tr><td><strong>Startup time</strong></td><td>Minutes</td><td><strong style="color:var(--green)">Seconds</strong></td></tr>
+        <tr><td><strong>Best for</strong></td><td>Legacy, custom setups</td><td><strong style="color:var(--green)">Modern microservices</strong></td></tr>
+        <tr><td><strong>Learning curve</strong></td><td>Understand infra deeply</td><td><strong style="color:var(--green)">Focus on code</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World <span class="hl" style="color:var(--red)">Mistakes</span> with VMs</h2>
+    <p class="sub">Learn from others' expensive lessons</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Mistake</th><th>Impact</th><th>Prevention</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Forgetting to stop VM</strong></td><td>Bills running 24/7</td><td>Set reminders, budget alerts</td></tr>
+        <tr><td><strong>Exposing all ports</strong></td><td>Security breach risk</td><td>Whitelist only needed ports</td></tr>
+        <tr><td><strong>Using VMs for microservices</strong></td><td>Over-managing infra</td><td>Use Cloud Run instead</td></tr>
+        <tr><td><strong>No monitoring setup</strong></td><td>Blind to issues</td><td>Enable Cloud Monitoring</td></tr>
+        <tr><td><strong>Single zone deployment</strong></td><td>Downtime on zone failure</td><td>Deploy across zones</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>VMs</strong> = maximum control, minimum automation</li>
+      <li><strong>You manage:</strong> OS, security patches, scaling, monitoring — all of it</li>
+      <li><strong>Great for:</strong> Learning cloud fundamentals &amp; running legacy systems</li>
+      <li><strong>Not ideal for:</strong> Modern cloud-native microservices</li>
+      <li><strong>Always remember:</strong> Stop what you're not using — your wallet will thank you</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Cloud Run: The Modern Way to Deploy</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Zero infra, auto-scaling, pay-per-request. This is where cloud gets exciting.</p>
+  <div class="next-box">Section 6 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>
