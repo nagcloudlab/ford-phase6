@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python -c ':*)",
+      "Bash(\"/c/Users/nagcl/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" builds submit --tag asia-south1-docker.pkg.dev/ford-training-project/upi-repo/upi-transfer-service)",
+      "Read(//c/Users/nagcl/.claude/projects/c--Users-nagcl-ford/bae8cddd-294b-4566-ade1-71b654b83c8e/tool-results/**)",
+      "Bash(\"/c/Users/nagcl/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" run deploy upi-transfer-service --image asia-south1-docker.pkg.dev/ford-training-project/upi-repo/upi-transfer-service --region asia-south1 --allow-unauthenticated --port 8080)",
+      "Bash(curl -s https://upi-transfer-service-462744195536.asia-south1.run.app/actuator/health)",
+      "Bash(python -m json.tool)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(gh repo:*)",
+      "Bash(winget install:*)",
+      "Read(//c/Program Files/**)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(rm -rf upi-transfer-service/.git)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)"
+    ]
+  }
+}
