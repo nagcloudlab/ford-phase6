@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome — Phase 6: Cloud (GCP) & DevOps</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">Ford Fullstack Program &middot; Phase 6</div>
+  <h1>Cloud (GCP) &amp; DevOps</h1>
+  <p class="tagline">From localhost to production &mdash; in 4 days</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 THE JOURNEY SO FAR ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Journey <span class="hl">So Far</span></h2>
+    <p class="sub">Five phases have brought you here &mdash; each one building on the last</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card gb">
+        <span class="icon">&#9989;</span>
+        <div class="ct">Phase 1</div>
+        <p>Modern Java &mdash; OOP, Streams, Concurrency, Testing with JUnit & Mockito</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">&#9989;</span>
+        <div class="ct">Phase 2</div>
+        <p>Git & GitHub &mdash; Branching, PRs, Code Reviews, Git Flow</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">&#9989;</span>
+        <div class="ct">Phase 3</div>
+        <p>Spring Boot &mdash; REST APIs, JPA, Validation, Swagger</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">&#9989;</span>
+        <div class="ct">Phase 4</div>
+        <p>Security & Microservices &mdash; JWT, OAuth2, Eureka, Kafka</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">&#9989;</span>
+        <div class="ct">Phase 5</div>
+        <p>Frontend &mdash; Angular, React, TypeScript, Redux</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">&#128640;</span>
+        <div class="ct">Phase 6</div>
+        <p><strong>You are here</strong> &mdash; Cloud, CI/CD, Caching, Big Data</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 WHAT IS PHASE 6 ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is <span class="hl">Phase 6?</span></h2>
+    <p class="sub">The final phase &mdash; taking your Spring Boot services from laptop to cloud</p>
+  </div>
+  <div class="slide-body">
+    <p style="font-size:1.45rem; margin-bottom: 24px;">
+      You've built REST APIs, secured them, connected databases, even split them into microservices.
+      <strong>But where do they run in the real world?</strong>
+    </p>
+    <div class="callout">
+      Phase 6 answers the question every developer eventually faces:<br>
+      <strong>"My app works on localhost &mdash; now what?"</strong>
+    </div>
+    <div class="cards c2" style="margin-top: 24px;">
+      <div class="card centered">
+        <span class="icon">&#9729;&#65039;</span>
+        <div class="ct">Cloud-Native Deployment</div>
+        <p>Containerize and deploy to Google Cloud Run</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">&#9881;&#65039;</span>
+        <div class="ct">Automated Pipelines</div>
+        <p>CI/CD with Tekton &mdash; push code, auto-deploy</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">&#128172;</span>
+        <div class="ct">Event-Driven Messaging</div>
+        <p>Google Pub/Sub for async communication</p>
+      </div>
+      <div class="card centered">
+        <span class="icon">&#128202;</span>
+        <div class="ct">Caching & Analytics</div>
+        <p>Redis for speed, BigQuery for insights</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 FOUR-DAY PLAN ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The <span class="hl">4-Day Plan</span></h2>
+    <p class="sub">Each day builds on the previous &mdash; by Day 38 you'll have a production-grade system</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:15%">Day</th>
+          <th style="width:30%">Theme</th>
+          <th>Topics</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Day 35</strong><br><span style="font-size:0.85rem;color:var(--text-light)">7 Apr</span></td>
+          <td><strong>GCP Basics</strong></td>
+          <td>IAM, Projects, Billing, Cloud Shell, gcloud CLI, <strong>Deploy to Cloud Run</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Day 36</strong><br><span style="font-size:0.85rem;color:var(--text-light)">8 Apr</span></td>
+          <td><strong>CI/CD & Messaging</strong></td>
+          <td>Tekton Pipelines, Google Pub/Sub, Spring Boot integration, Monitoring & Logs</td>
+        </tr>
+        <tr>
+          <td><strong>Day 37</strong><br><span style="font-size:0.85rem;color:var(--text-light)">9 Apr</span></td>
+          <td><strong>Caching & Big Data</strong></td>
+          <td>Redis caching with Spring Boot, BigQuery analytics, Full-stack architecture review</td>
+        </tr>
+        <tr>
+          <td><strong>Day 38</strong><br><span style="font-size:0.85rem;color:var(--text-light)">10 Apr</span></td>
+          <td><strong>Capstone Project</strong></td>
+          <td>End-to-end build &mdash; deploy, pipeline, messaging, caching, all together</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 MEET THE SERVICE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Meet Our Service: <span class="hl">UPI Transfer</span></h2>
+    <p class="sub">A real-world Spring Boot app we'll use throughout Phase 6</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p style="margin-bottom: 18px;">A simplified <strong>UPI money transfer service</strong> built with Spring Boot 3.4. Think of it as a mini Google Pay backend &mdash; accounts, balances, and instant transfers.</p>
+        <div class="features">
+          <div class="feat">
+            <div class="num">1</div>
+            <div>
+              <div class="ft">Transfer Money</div>
+              <p class="fd"><code>POST /api/transfer</code> &mdash; send money between UPI IDs</p>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="num">2</div>
+            <div>
+              <div class="ft">Check Balance</div>
+              <p class="fd"><code>GET /api/balance/{upiId}</code> &mdash; real-time account balance</p>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="num">3</div>
+            <div>
+              <div class="ft">Transaction History</div>
+              <p class="fd"><code>GET /api/transactions/{upiId}</code> &mdash; full audit trail</p>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="num">4</div>
+            <div>
+              <div class="ft">Health & Docs</div>
+              <p class="fd">Actuator health checks + Swagger UI out of the box</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="code-block">
+          <div class="lang">Tech Stack</div>
+          <pre>
+<span class="cmd">Spring Boot</span>  <span class="str">3.4.4</span>
+<span class="cmd">Java</span>         <span class="str">17</span>
+<span class="cmd">Database</span>     <span class="str">H2 (in-memory)</span>
+<span class="cmd">ORM</span>          <span class="str">Spring Data JPA</span>
+<span class="cmd">Validation</span>   <span class="str">Jakarta Bean</span>
+<span class="cmd">API Docs</span>     <span class="str">SpringDoc OpenAPI</span>
+<span class="cmd">Monitoring</span>   <span class="str">Spring Actuator</span></pre>
+        </div>
+        <div class="callout green" style="margin-top: 16px;">
+          <strong>Why this service?</strong><br>
+          Small enough to understand in 5 minutes, rich enough to demonstrate every cloud concept we'll cover.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 HOW WE'LL EVOLVE THE SERVICE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>How We'll <span class="hl">Evolve It</span></h2>
+    <p class="sub">Same service, new superpowers each day</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow">
+      <div class="anode public" style="min-width: 520px;">
+        <strong>Day 35</strong> &mdash; Containerize &amp; deploy to Cloud Run
+      </div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private" style="min-width: 520px;">
+        <strong>Day 36</strong> &mdash; Add Tekton CI/CD pipeline + Pub/Sub notifications
+      </div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public" style="min-width: 520px;">
+        <strong>Day 37</strong> &mdash; Add Redis caching + BigQuery analytics
+      </div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private" style="min-width: 520px;">
+        <strong>Day 38</strong> &mdash; Full production architecture (Capstone)
+      </div>
+    </div>
+    <div class="callout orange" style="margin-top: 24px;">
+      <strong>Incremental approach:</strong> We don't throw everything at you on Day 1. Each day adds one layer of cloud capability to the same familiar codebase. By the end, you'll have built a production-grade system step by step.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 ARCHITECTURE PREVIEW ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Where We're <span class="hl">Heading</span></h2>
+    <p class="sub">By Day 38, your UPI service will look like this</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card bb" style="grid-row: span 2;">
+        <span class="icon">&#128187;</span>
+        <div class="ct">Developer</div>
+        <p><code>git push</code> triggers everything</p>
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light);">
+          <div class="ct" style="font-size: 1.1rem;">Tekton Pipeline</div>
+          <p style="font-size: 1rem;">Build &rarr; Test &rarr; Image &rarr; Deploy</p>
+        </div>
+      </div>
+      <div class="card gb">
+        <span class="icon">&#9729;&#65039;</span>
+        <div class="ct">Cloud Run</div>
+        <p>Auto-scaling containers running your Spring Boot service</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">&#128232;</span>
+        <div class="ct">Pub/Sub</div>
+        <p>Async notifications on every transfer event</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">&#9889;</span>
+        <div class="ct">Redis Cache</div>
+        <p>Blazing fast balance lookups &mdash; millisecond response</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">&#128200;</span>
+        <div class="ct">BigQuery</div>
+        <p>Analyze millions of transactions with SQL</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top: 20px;">
+      <strong>Key takeaway:</strong> This is the same architecture that powers real fintech platforms &mdash; just at a learning scale.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 WHAT YOU NEED ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What You'll <span class="hl">Need</span></h2>
+    <p class="sub">Quick checklist before we dive in tomorrow</p>
+  </div>
+  <div class="slide-body">
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div>
+          <div class="ft">Google Account</div>
+          <p class="fd">Free tier gives you $300 credit &mdash; more than enough for this phase</p>
+        </div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div>
+          <div class="ft">Java 17 + Maven</div>
+          <p class="fd">You already have this from Phase 1 &mdash; just make sure it's still working</p>
+        </div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div>
+          <div class="ft">Docker Desktop</div>
+          <p class="fd">We'll containerize our service on Day 35 &mdash; install if you haven't already</p>
+        </div>
+      </div>
+      <div class="feat">
+        <div class="num">4</div>
+        <div>
+          <div class="ft">Curiosity</div>
+          <p class="fd">Cloud is where your code meets the real world &mdash; come ready to experiment</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top: 24px;">
+      <strong>Don't worry about GCP setup today.</strong> We'll walk through account creation, billing, and CLI setup together on Day 35 with step-by-step labs.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 END ─── -->
+<div class="slide slide--end">
+  <h2>Let's Build for the Cloud</h2>
+  <p>Phase 6 starts tomorrow &mdash; bring your laptop and your curiosity</p>
+  <div class="next-box">Day 35 &rarr; GCP Basics &amp; First Cloud Run Deploy</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>
