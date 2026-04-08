@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 11 — CI/CD with Tekton Pipelines</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 11</div>
+  <h1>CI/CD with<br>Tekton Pipelines</h1>
+  <p class="tagline">Automate Everything. Ship with Confidence.</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 WHY CI/CD MATTERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why CI/CD <span class="hl">Matters</span></h2>
+    <p class="sub">Without CI/CD, every deployment is a risk</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Manual Process</th><th>What Goes Wrong</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Developer builds locally</strong></td><td>"Works on my machine" — fails in production</td></tr>
+        <tr><td><strong>Copy JAR to server via SSH</strong></td><td>Wrong version deployed, no audit trail</td></tr>
+        <tr><td><strong>Run tests... sometimes</strong></td><td>Bugs slip through to production</td></tr>
+        <tr><td><strong>Deploy on Friday at 5pm</strong></td><td>Weekend outage, nobody remembers the steps</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c2" style="margin-bottom:16px;">
+      <div class="card rb">
+        <div class="ct">The Real Cost</div>
+        <p><strong>Slow</strong> — hours of manual work per release<br>
+        <strong>Error-prone</strong> — humans forget steps, make typos<br>
+        <strong>Inconsistent</strong> — every developer deploys differently<br>
+        <strong>Scary</strong> — deployments become high-stress events</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">The CI/CD Promise</div>
+        <p>Turn deployments from risky events into <strong>boring, automated routines</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 WHAT IS CI/CD ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is <span class="hl">CI/CD?</span></h2>
+    <p class="sub">Continuous Integration &amp; Continuous Delivery / Deployment</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box good">
+        <div class="compare-head">Continuous Integration (CI)</div>
+        <div class="compare-body">
+          <p>Every code change is <strong>automatically built, tested, and validated</strong>.</p>
+          <div class="code-block" style="margin-top:8px;">
+            <pre>Developer pushes code
+     &#8595;
+Automated build (mvn package)
+     &#8595;
+Automated tests (unit + integration)
+     &#8595;
+Build passes &#8594; code is safe to merge
+Build fails  &#8594; developer fixes immediately</pre>
+          </div>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Continuous Delivery / Deployment (CD)</div>
+        <div class="compare-body">
+          <p>Every validated change is <strong>automatically packaged and deployed</strong>.</p>
+          <table style="margin-top:8px;">
+            <tbody>
+              <tr><td><strong>Continuous Delivery</strong></td><td>Artifact ready to deploy at any time (manual approval to prod)</td></tr>
+              <tr><td><strong>Continuous Deployment</strong></td><td>Every passing change goes straight to production (fully automated)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="arch-flow" style="margin-bottom:12px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Code Push</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Build &rarr; Test &rarr; Package (CI)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Push Image &rarr; Deploy (CD)</div>
+    </div>
+    <div class="callout green">
+      <strong>CI catches bugs early. CD ships features fast.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 CI/CD TOOLS LANDSCAPE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>CI/CD Tools <span class="hl">Landscape</span></h2>
+    <p class="sub">Comparing popular CI/CD tools and why Tekton stands out</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Tool</th><th>Type</th><th>Strengths</th><th>Weakness</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Jenkins</strong></td><td>Self-hosted</td><td>Mature, plugin ecosystem</td><td>Complex setup, high maintenance</td></tr>
+        <tr><td><strong>GitHub Actions</strong></td><td>SaaS</td><td>Tight GitHub integration</td><td>Vendor lock-in, limited customization</td></tr>
+        <tr><td><strong>GitLab CI</strong></td><td>SaaS / Self-hosted</td><td>Built into GitLab</td><td>Tied to GitLab platform</td></tr>
+        <tr><td><strong>Cloud Build</strong></td><td>GCP Managed</td><td>Zero setup on GCP</td><td>GCP-only, less flexible</td></tr>
+        <tr><td><strong>Tekton</strong></td><td>Kubernetes-native</td><td><strong style="color:var(--green)">Portable, cloud-native, extensible</strong></td><td>Steeper learning curve</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3" style="margin-bottom:16px;">
+      <div class="card gb">
+        <span class="icon">☸️</span>
+        <div class="ct">Kubernetes-Native</div>
+        <p>Runs on GKE, uses K8s primitives</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🔓</span>
+        <div class="ct">No Vendor Lock-in</div>
+        <p>Works on any Kubernetes cluster</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">🔄</span>
+        <div class="ct">Reusable Components</div>
+        <p>Share Tasks across teams &amp; projects</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Tekton = the Kubernetes way to do CI/CD.</strong> Open source, backed by the CD Foundation.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 WHAT IS TEKTON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is <span class="hl">Tekton?</span></h2>
+    <p class="sub">A Kubernetes-native, open-source framework for building CI/CD pipelines</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Traditional CI/CD (Jenkins)</div>
+        <div class="compare-body">
+          <p>Jenkins Server &rarr; Runs jobs on agents &rarr; Deploys</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Tekton (Kubernetes-native)</div>
+        <div class="compare-body">
+          <p>Kubernetes Cluster &rarr; Runs pipelines as Pods &rarr; Deploys</p>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Property</th><th>What It Means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Kubernetes-native</strong></td><td>Pipelines are K8s custom resources (CRDs)</td></tr>
+        <tr><td><strong>Runs as Pods</strong></td><td>Each step runs in a container inside a Pod</td></tr>
+        <tr><td><strong>Declarative</strong></td><td>Define pipelines in YAML, version in Git</td></tr>
+        <tr><td><strong>Scalable</strong></td><td>Kubernetes handles scheduling and scaling</td></tr>
+        <tr><td><strong>Reusable</strong></td><td>Tasks from Tekton Hub can be shared across projects</td></tr>
+      </tbody>
+    </table>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Think of Tekton as "Kubernetes for your CI/CD pipelines."</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 TEKTON CORE CONCEPTS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Tekton <span class="hl">Core Concepts</span></h2>
+    <p class="sub">The building blocks: Step &rarr; Task &rarr; Pipeline &rarr; PipelineRun</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block" style="margin-bottom:16px;">
+          <div class="lang">Pipeline Hierarchy</div>
+          <pre>Pipeline
+  ├── Task 1 (clone repo)
+  │     ├── Step 1: git clone
+  │     └── Step 2: list files
+  ├── Task 2 (build &amp; test)
+  │     ├── Step 1: mvn compile
+  │     └── Step 2: mvn test
+  ├── Task 3 (build image)
+  │     └── Step 1: docker build
+  └── Task 4 (deploy)
+        └── Step 1: gcloud run deploy</pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <table>
+          <thead><tr><th>Concept</th><th>Analogy</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Step</strong></td><td>One line in a script</td></tr>
+            <tr><td><strong>Task</strong></td><td>A function</td></tr>
+            <tr><td><strong>Pipeline</strong></td><td>The full program</td></tr>
+            <tr><td><strong>PipelineRun</strong></td><td>Running the program</td></tr>
+            <tr><td><strong>Workspace</strong></td><td>A shared folder</td></tr>
+            <tr><td><strong>TaskRun</strong></td><td>Calling one function</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Step &rarr; Task &rarr; Pipeline &rarr; PipelineRun.</strong> That's the hierarchy.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 HOW TEKTON WORKS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>How Tekton Works — <span class="hl">The Full Flow</span></h2>
+    <p class="sub">From git push to live deployment, fully automated</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:16px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Developer pushes code to GitHub</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">GitHub Webhook &rarr; Tekton EventListener</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark);">TriggerTemplate creates PipelineRun</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">Pipeline executes Tasks in order</div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Clone Repo</div><p class="fd">git clone upi-transfer-service</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Build &amp; Test</div><p class="fd">mvn clean package -DskipTests=false</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Build Docker Image</div><p class="fd">docker build -t upi-transfer-service:v1.2</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">4</div>
+        <div><div class="ft">Push to Artifact Registry</div><p class="fd">docker push asia-south1-docker.pkg.dev/...</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">5</div>
+        <div><div class="ft">Deploy to Cloud Run</div><p class="fd">gcloud run deploy upi-transfer-service</p></div>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:12px;">
+      <strong>Every git push triggers a fully automated pipeline. No manual steps.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 TEKTON TASK EXAMPLE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Tekton Task Example — <span class="hl">Clone a Repository</span></h2>
+    <p class="sub">A Task defines steps that run in containers inside a Pod</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:20px;">
+      <div class="lang">YAML — git-clone Task</div>
+      <pre><code><span class="cmd">apiVersion:</span> tekton.dev/v1beta1
+<span class="cmd">kind:</span> Task
+<span class="cmd">metadata:</span>
+  <span class="flag">name:</span> git-clone
+<span class="cmd">spec:</span>
+  <span class="flag">params:</span>
+    - name: <span class="str">repo-url</span>
+      type: string
+    - name: <span class="str">revision</span>
+      default: main
+  <span class="flag">workspaces:</span>
+    - name: <span class="str">source</span>
+      description: Where the cloned repo will be stored
+  <span class="flag">steps:</span>
+    - name: <span class="str">clone</span>
+      image: alpine/git:latest
+      script: |
+        git clone $(params.repo-url) $(workspaces.source.path)/source
+        cd $(workspaces.source.path)/source
+        git checkout $(params.revision)
+    - name: <span class="str">verify</span>
+      image: alpine:latest
+      script: |
+        ls -la $(workspaces.source.path)/source
+        echo <span class="str">"Clone complete. Files ready for build."</span></code></pre>
+    </div>
+    <div class="cards c2">
+      <div class="card bb">
+        <div class="ct">params</div>
+        <p>Input values (repo URL, branch) passed at runtime</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">workspaces</div>
+        <p>Shared volume where the cloned code lives</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">steps</div>
+        <p>Two containers: one clones, one verifies</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Pod Execution</div>
+        <p>Each step runs in its own container <strong>inside the same Pod</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 TEKTON PIPELINE — UPI TRANSFER SERVICE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Tekton Pipeline — <span class="hl">UPI Transfer Service</span></h2>
+    <p class="sub">A complete pipeline: clone &rarr; build &rarr; image &rarr; deploy</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">YAML — upi-transfer-pipeline</div>
+      <pre><code><span class="cmd">apiVersion:</span> tekton.dev/v1beta1
+<span class="cmd">kind:</span> Pipeline
+<span class="cmd">metadata:</span>
+  <span class="flag">name:</span> upi-transfer-pipeline
+<span class="cmd">spec:</span>
+  <span class="flag">params:</span>
+    - name: <span class="str">repo-url</span>
+    - name: <span class="str">image-tag</span>
+  <span class="flag">workspaces:</span>
+    - name: <span class="str">shared-workspace</span>
+  <span class="flag">tasks:</span>
+    - name: clone
+      taskRef: { name: git-clone }
+      params:
+        - { name: repo-url, value: <span class="str">$(params.repo-url)</span> }
+      workspaces:
+        - { name: source, workspace: shared-workspace }
+
+    - name: build-and-test
+      taskRef: { name: maven-build }
+      <span class="flag">runAfter:</span> [<span class="str">"clone"</span>]
+
+    - name: build-image
+      taskRef: { name: docker-build }
+      <span class="flag">runAfter:</span> [<span class="str">"build-and-test"</span>]
+      params:
+        - { name: image, value: <span class="str">"asia-south1-docker.pkg.dev/.../upi-transfer-service:$(params.image-tag)"</span> }
+
+    - name: deploy-to-cloud-run
+      taskRef: { name: gcloud-deploy }
+      <span class="flag">runAfter:</span> [<span class="str">"build-image"</span>]
+      params:
+        - { name: service-name, value: <span class="str">upi-transfer-service</span> }
+        - { name: region, value: <span class="str">asia-south1</span> }</code></pre>
+    </div>
+    <div class="cards c3">
+      <div class="card gb">
+        <div class="ct">runAfter</div>
+        <p>Controls execution order: clone &rarr; build &rarr; image &rarr; deploy</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">shared-workspace</div>
+        <p>All Tasks access the same source code volume</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">params flow down</div>
+        <p>Pipeline params are passed to individual Tasks</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 TEKTON TRIGGERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Tekton Triggers — <span class="hl">Automate Pipeline Execution</span></h2>
+    <p class="sub">Three components connect GitHub events to pipeline runs</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Component</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><strong>EventListener</strong></td><td>Receives incoming webhooks (listens on a URL)</td></tr>
+        <tr><td><strong>TriggerBinding</strong></td><td>Extracts data from the webhook payload (repo URL, branch, commit)</td></tr>
+        <tr><td><strong>TriggerTemplate</strong></td><td>Creates a PipelineRun with the extracted data</td></tr>
+      </tbody>
+    </table>
+    <div class="arch-flow" style="margin-bottom:16px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">GitHub Push Event</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">EventListener (http://tekton.example.com:8080)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark);">TriggerBinding (extracts repo-url, commit-sha)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode private">TriggerTemplate &rarr; PipelineRun &rarr; Pipeline runs automatically</div>
+    </div>
+    <div class="split" style="margin-bottom:12px;">
+      <div class="split-left">
+        <div class="code-block">
+          <div class="lang">EventListener YAML</div>
+          <pre><code><span class="cmd">apiVersion:</span> triggers.tekton.dev/v1beta1
+<span class="cmd">kind:</span> EventListener
+<span class="cmd">metadata:</span>
+  <span class="flag">name:</span> upi-github-listener
+<span class="cmd">spec:</span>
+  <span class="flag">triggers:</span>
+    - name: github-push
+      bindings:
+        - ref: <span class="str">github-push-binding</span>
+      template:
+        ref: <span class="str">upi-pipeline-template</span></code></pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="code-block">
+          <div class="lang">TriggerBinding YAML</div>
+          <pre><code><span class="cmd">apiVersion:</span> triggers.tekton.dev/v1beta1
+<span class="cmd">kind:</span> TriggerBinding
+<span class="cmd">metadata:</span>
+  <span class="flag">name:</span> github-push-binding
+<span class="cmd">spec:</span>
+  <span class="flag">params:</span>
+    - name: <span class="str">repo-url</span>
+      value: $(body.repository.clone_url)
+    - name: <span class="str">image-tag</span>
+      value: $(body.head_commit.id)</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Push to GitHub &rarr; Pipeline runs automatically. True CI/CD.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 CLOUD BUILD — MANAGED ALTERNATIVE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Build — <span class="hl">The Managed Alternative</span></h2>
+    <p class="sub">When you want CI/CD without managing a Kubernetes cluster</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Factor</th><th>Tekton</th><th>Cloud Build</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Setup</strong></td><td>Install on GKE, configure CRDs</td><td><strong style="color:var(--green)">Zero setup, fully managed</strong></td></tr>
+        <tr><td><strong>Infrastructure</strong></td><td>You manage the K8s cluster</td><td><strong style="color:var(--green)">Google manages everything</strong></td></tr>
+        <tr><td><strong>Portability</strong></td><td><strong style="color:var(--green)">Runs anywhere K8s runs</strong></td><td>GCP only</td></tr>
+        <tr><td><strong>Flexibility</strong></td><td><strong style="color:var(--green)">Full control over execution</strong></td><td>Opinionated, limited customization</td></tr>
+        <tr><td><strong>Cost</strong></td><td>Cluster cost + pipeline runs</td><td>Pay per build-minute</td></tr>
+        <tr><td><strong>Learning curve</strong></td><td>Steeper (K8s + Tekton concepts)</td><td><strong style="color:var(--green)">Easier (simple YAML)</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">cloudbuild.yaml — UPI Transfer Service</div>
+      <pre><code><span class="cmd">steps:</span>
+  - name: <span class="str">'maven:3.9-eclipse-temurin-17'</span>
+    args: [<span class="str">'mvn'</span>, <span class="str">'clean'</span>, <span class="str">'package'</span>, <span class="str">'-DskipTests=false'</span>]
+
+  - name: <span class="str">'gcr.io/cloud-builders/docker'</span>
+    args: [<span class="str">'build'</span>, <span class="str">'-t'</span>, <span class="str">'asia-south1-docker.pkg.dev/ford-upi/upi-repo/upi-transfer-service:$COMMIT_SHA'</span>, <span class="str">'.'</span>]
+
+  - name: <span class="str">'gcr.io/cloud-builders/docker'</span>
+    args: [<span class="str">'push'</span>, <span class="str">'asia-south1-docker.pkg.dev/ford-upi/upi-repo/upi-transfer-service:$COMMIT_SHA'</span>]
+
+  - name: <span class="str">'gcr.io/cloud-builders/gcloud'</span>
+    args: [<span class="str">'run'</span>, <span class="str">'deploy'</span>, <span class="str">'upi-transfer-service'</span>,
+           <span class="flag">'--image'</span>, <span class="str">'asia-south1-docker.pkg.dev/ford-upi/upi-repo/upi-transfer-service:$COMMIT_SHA'</span>,
+           <span class="flag">'--region'</span>, <span class="str">'asia-south1'</span>]</code></pre>
+    </div>
+    <div class="compare">
+      <div class="compare-box good">
+        <div class="compare-head">Use Cloud Build When</div>
+        <div class="compare-body">
+          <p>Small teams, GCP-only, want minimal ops overhead</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Use Tekton When</div>
+        <div class="compare-body">
+          <p>Multi-cloud, need full control, want Kubernetes-native pipelines</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 CI/CD BEST PRACTICES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>CI/CD <span class="hl">Best Practices</span></h2>
+    <p class="sub">Ship fast, ship safe — the rules that matter</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Practice</th><th>Why It Matters</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Trunk-based development</strong></td><td>Short-lived branches reduce merge conflicts</td></tr>
+        <tr><td><strong>Fast feedback loops</strong></td><td>Pipeline should complete in under 10 minutes</td></tr>
+        <tr><td><strong>Immutable artifacts</strong></td><td>Never modify a built image — build a new one</td></tr>
+        <tr><td><strong>Tag images with commit SHA</strong></td><td>Always know exactly what code is running</td></tr>
+        <tr><td><strong>Automated rollback</strong></td><td>If health check fails, revert to previous revision</td></tr>
+        <tr><td><strong>Separate build and deploy</strong></td><td>Build once, deploy to dev &rarr; staging &rarr; prod</td></tr>
+      </tbody>
+    </table>
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block">
+          <div class="lang">bash — Rollback on Cloud Run</div>
+          <pre><code><span class="cmt"># List revisions</span>
+<span class="cmd">gcloud</span> run revisions list \
+  <span class="flag">--service</span>=upi-transfer-service \
+  <span class="flag">--region</span>=asia-south1
+
+<span class="cmt"># Instant rollback to previous version</span>
+<span class="cmd">gcloud</span> run services update-traffic upi-transfer-service \
+  <span class="flag">--to-revisions</span>=upi-transfer-service-00003-abc=100 \
+  <span class="flag">--region</span>=asia-south1</code></pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <p><strong>Pipeline Speed Targets</strong></p>
+        <table>
+          <thead><tr><th>Stage</th><th>Target</th></tr></thead>
+          <tbody>
+            <tr><td>Clone</td><td>&lt; 10 seconds</td></tr>
+            <tr><td>Build + Test</td><td>&lt; 3 minutes</td></tr>
+            <tr><td>Docker Build</td><td>&lt; 2 minutes</td></tr>
+            <tr><td>Push Image</td><td>&lt; 1 minute</td></tr>
+            <tr><td>Deploy</td><td>&lt; 1 minute</td></tr>
+            <tr><td><strong>Total</strong></td><td><strong>&lt; 7 minutes</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:12px;">
+      <strong>Fast pipelines keep developers in flow. Slow pipelines get ignored.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 EXPERT TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Expert <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>CI/CD is not optional</strong> — it's the foundation of modern software delivery</li>
+      <li><strong>Tekton = Kubernetes-native CI/CD</strong> — portable, extensible, open-source</li>
+      <li><strong>Pipeline = Tasks + Steps</strong> — each step runs in its own container</li>
+      <li><strong>Triggers automate everything</strong> — push to Git, pipeline runs, app deploys</li>
+      <li><strong>Cloud Build is the easy path</strong> — use it when you don't need Tekton's flexibility</li>
+      <li><strong>Immutable artifacts + fast feedback</strong> = the two most important CI/CD practices</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 14 END ─── -->
+<div class="slide slide--end">
+  <h2>What's Next?</h2>
+  <p>Pub/Sub &amp; Event-Driven Architecture</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Decouple your microservices with asynchronous messaging. How the UPI transfer service publishes transaction events for downstream consumers.</p>
+  <div class="next-box">Section 12 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

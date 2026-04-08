@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 13 — Monitoring &amp; Observability</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Section 13</div>
+  <h1>Monitoring &amp;<br>Observability</h1>
+  <p class="tagline">See Everything, Fix Faster</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 WHY OBSERVABILITY MATTERS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why <span class="hl">Observability</span> Matters</h2>
+    <p class="sub">"You can't fix what you can't see."</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card rb">
+        <span class="icon">💥</span>
+        <div class="ct">Breaks in Production</div>
+        <p>Code that works in dev <strong>breaks in production</strong> in unexpected ways.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">🔔</span>
+        <div class="ct">Users Find It First</div>
+        <p>Users discover outages <strong>before your team does</strong>.</p>
+      </div>
+      <div class="card rb">
+        <span class="icon">💸</span>
+        <div class="ct">Costly Downtime</div>
+        <p>A 5-minute payment outage at scale = <strong>thousands of failed UPI transfers</strong>.</p>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Without Observability</div>
+      <pre>User:    <span class="str">"Payments are failing!"</span>
+Team:    <span class="str">"Let me SSH into the server and check logs..."</span>
+Manager: <span class="str">"How long has this been happening?"</span>
+Team:    <span class="str">"...we don't know."</span></pre>
+    </div>
+    <div class="callout green">
+      <strong>Observability turns "we don't know" into "we already know and we're fixing it."</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 THREE PILLARS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Three Pillars of <span class="hl">Observability</span></h2>
+    <p class="sub">Metrics, Logs, and Traces — working together</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Pillar</th><th>What It Answers</th><th>Example (UPI Service)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Metrics</strong></td><td>How is the system performing right now?</td><td>Request latency is 450ms (up from 120ms)</td></tr>
+        <tr><td><strong>Logs</strong></td><td>What happened at a specific moment?</td><td><code>ERROR: NPCI timeout for txn UPI-20260408-9832</code></td></tr>
+        <tr><td><strong>Traces</strong></td><td>How did a request flow through the system?</td><td>API Gateway &rarr; Auth &rarr; Transfer Service &rarr; NPCI &rarr; DB</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">How They Work Together</div>
+      <pre><span class="cmd">Alert fires</span>       (Metric: error rate &gt; 5%)
+     &darr;
+<span class="cmd">Check dashboard</span>   (Metric: latency spike at 14:32)
+     &darr;
+<span class="cmd">Search logs</span>       (Log: <span class="str">"Connection pool exhausted"</span>)
+     &darr;
+<span class="cmd">Follow trace</span>      (Trace: DB call taking 8s instead of 50ms)
+     &darr;
+<span class="cmd">Root cause found</span>  &rarr; Cloud SQL connection limit hit</pre>
+    </div>
+    <div class="callout">
+      <strong>Metrics tell you SOMETHING is wrong. Logs tell you WHAT. Traces tell you WHERE.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 CLOUD OPERATIONS SUITE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Google Cloud <span class="hl">Operations Suite</span></h2>
+    <p class="sub">Formerly Stackdriver — now fully integrated into GCP</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cloud Monitoring</strong></td><td>Metrics, dashboards, uptime checks</td></tr>
+        <tr><td><strong>Cloud Logging</strong></td><td>Centralized log collection and analysis</td></tr>
+        <tr><td><strong>Cloud Trace</strong></td><td>Distributed tracing and latency analysis</td></tr>
+        <tr><td><strong>Cloud Profiler</strong></td><td>Continuous CPU and memory profiling</td></tr>
+        <tr><td><strong>Error Reporting</strong></td><td>Automatic error grouping and tracking</td></tr>
+      </tbody>
+    </table>
+    <div class="cards c3">
+      <div class="card gb">
+        <span class="icon">🔌</span>
+        <div class="ct">Zero Setup</div>
+        <p>Cloud Run, Cloud SQL, GKE emit metrics and logs automatically.</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🖥️</span>
+        <div class="ct">Single Pane of Glass</div>
+        <p>All data in one console — no jumping between tools.</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">🔗</span>
+        <div class="ct">Deep Integration</div>
+        <p>Logs link to traces, traces link to metrics.</p>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>You don't install agents or run separate servers. It's built into GCP.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 CLOUD MONITORING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Monitoring &mdash; <span class="hl">Dashboards &amp; Metrics</span></h2>
+    <p class="sub">What gets monitored automatically and how to explore it</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card gb">
+        <span class="icon">🚀</span>
+        <div class="ct">Cloud Run</div>
+        <p>Request count, latency, instance count, memory usage</p>
+      </div>
+      <div class="card bb">
+        <span class="icon">🗄️</span>
+        <div class="ct">Cloud SQL</div>
+        <p>Connections, queries, CPU, storage</p>
+      </div>
+      <div class="card ob">
+        <span class="icon">⚖️</span>
+        <div class="ct">Load Balancer</div>
+        <p>Request rate, error rate, backend latency</p>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Metrics Explorer</div>
+      <pre><span class="cmd">Resource type:</span>  Cloud Run Revision
+<span class="cmd">Metric:</span>         Request Latencies
+<span class="cmd">Filter:</span>         service_name = <span class="str">"upi-transfer-service"</span>
+<span class="cmd">Group by:</span>       response_code
+<span class="cmd">Aggregation:</span>    95th percentile</pre>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Custom Metrics (Java)</div>
+      <pre><span class="cmt">// Track UPI-specific business metrics</span>
+Meter registry &rarr; counter(<span class="str">"upi.transfers.initiated"</span>)
+Meter registry &rarr; counter(<span class="str">"upi.transfers.completed"</span>)
+Meter registry &rarr; timer(<span class="str">"upi.npci.callback.latency"</span>)</pre>
+    </div>
+    <div class="callout">
+      <strong>Dashboards turn raw numbers into visual understanding.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 CLOUD LOGGING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Logging &mdash; <span class="hl">Your System's Black Box</span></h2>
+    <p class="sub">Structured logs, filters, sinks, and log-based metrics</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:16px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Unstructured</div>
+        <div class="compare-body">
+          <p><code>Payment failed for user 12345</code></p>
+          <p style="margin-top:8px;opacity:0.7;">Only searchable with text search</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Structured (JSON)</div>
+        <div class="compare-body">
+          <p><code>{"severity":"ERROR","userId":"12345","txnId":"UPI-9832","error":"TIMEOUT"}</code></p>
+          <p style="margin-top:8px;opacity:0.7;">Every field is searchable</p>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Log Filters</div>
+      <pre><span class="cmd">resource.type</span>=<span class="str">"cloud_run_revision"</span>
+<span class="cmd">resource.labels.service_name</span>=<span class="str">"upi-transfer-service"</span>
+<span class="cmd">severity</span>=ERROR
+<span class="cmd">jsonPayload.txnId</span>=<span class="str">"UPI-20260408-9832"</span></pre>
+    </div>
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Log Sink Destination</th><th>Use Case</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BigQuery</strong></td><td>Long-term analysis, compliance audits</td></tr>
+        <tr><td><strong>Cloud Storage</strong></td><td>Archival, cost-effective retention</td></tr>
+        <tr><td><strong>Pub/Sub</strong></td><td>Real-time processing, SIEM integration</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Structured logging is not optional. It's how you survive production.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 CLOUD TRACE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Cloud Trace &mdash; <span class="hl">Follow a Request End to End</span></h2>
+    <p class="sub">Find the bottleneck in seconds, not hours</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">The Problem</div>
+      <pre>User: <span class="str">"My UPI transfer is slow"</span>
+Team: <span class="str">"It could be the API, the auth service, the DB, or NPCI..."</span></pre>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">What a Trace Looks Like</div>
+      <pre><span class="cmd">POST /api/v1/transfers</span> (total: <span class="flag">2450ms</span>)
+├── Authentication        [<span class="str">50ms</span>]
+├── Input Validation      [<span class="str">5ms</span>]
+├── Fraud Check           [<span class="str">120ms</span>]
+├── DB: Check Balance     [<span class="str">45ms</span>]
+├── NPCI API Call          [<span class="flag">2100ms</span>]  &larr; <strong>BOTTLENECK</strong>
+├── DB: Update Status     [<span class="str">30ms</span>]
+└── Send Notification     [<span class="str">100ms</span>]</pre>
+    </div>
+    <div class="cards c2">
+      <div class="card bb">
+        <span class="icon">📊</span>
+        <div class="ct">Latency Distribution</div>
+        <p>View distribution across all requests, filter by method, status code, URL pattern</p>
+      </div>
+      <div class="card gb">
+        <span class="icon">🔗</span>
+        <div class="ct">Auto-Correlated</div>
+        <p>Click any span to see its logs — traces and logs are linked automatically</p>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Traces answer: "Why is THIS request slow?" instead of guessing.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 ALERTING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Alerting &mdash; <span class="hl">Get Notified Before Users Complain</span></h2>
+    <p class="sub">Proactive detection with alert policies and uptime checks</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Component</th><th>What It Does</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Condition</strong></td><td>When to fire</td><td>Error rate &gt; 5% for 5 minutes</td></tr>
+        <tr><td><strong>Notification Channel</strong></td><td>Where to send</td><td>Slack, email, PagerDuty, SMS</td></tr>
+        <tr><td><strong>Documentation</strong></td><td>What to do</td><td>Runbook link, escalation steps</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Uptime Check Configuration</div>
+      <pre><span class="cmd">Target:</span>     <span class="str">https://upi-service-abc123.a.run.app/actuator/health</span>
+<span class="cmd">Frequency:</span>  Every 60 seconds
+<span class="cmd">Regions:</span>    Mumbai, Singapore, Iowa
+<span class="cmd">Alert if:</span>   Fails from 2+ regions</pre>
+    </div>
+    <table style="margin-bottom:16px;">
+      <thead><tr><th>Alert</th><th>Condition</th><th>Severity</th></tr></thead>
+      <tbody>
+        <tr><td><strong>High error rate</strong></td><td>5xx errors &gt; 5%</td><td style="color:var(--red);">Critical</td></tr>
+        <tr><td><strong>High latency</strong></td><td>p95 latency &gt; 2s</td><td style="color:var(--orange);">Warning</td></tr>
+        <tr><td><strong>Service down</strong></td><td>Uptime check fails</td><td style="color:var(--red);">Critical</td></tr>
+        <tr><td><strong>DB connections exhausted</strong></td><td>Active connections &gt; 90%</td><td style="color:var(--orange);">Warning</td></tr>
+        <tr><td><strong>Transfer failures</strong></td><td>Custom metric &gt; threshold</td><td style="color:var(--red);">Critical</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Good alerts wake you up for real problems. Bad alerts make you ignore all alerts.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 SPRING BOOT ACTUATOR ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Spring Boot Actuator + <span class="hl">GCP Monitoring</span></h2>
+    <p class="sub">Give GCP the hooks to monitor your app from the inside</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block" style="margin-bottom:16px;">
+          <div class="lang">application.yml</div>
+          <pre><span class="cmd">management:</span>
+  <span class="cmd">endpoints:</span>
+    <span class="cmd">web:</span>
+      <span class="cmd">exposure:</span>
+        <span class="cmd">include:</span> <span class="str">health, metrics, prometheus, info</span>
+  <span class="cmd">endpoint:</span>
+    <span class="cmd">health:</span>
+      <span class="cmd">show-details:</span> <span class="str">when-authorized</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="lang">Custom Health Check (Java)</div>
+          <pre><span class="cmd">@Component</span>
+<span class="kw">public class</span> NpciHealthIndicator
+    <span class="kw">implements</span> HealthIndicator {
+
+  <span class="cmd">@Override</span>
+  <span class="kw">public</span> Health <span class="fn">health</span>() {
+    <span class="kw">boolean</span> ok = checkNpciConnectivity();
+    <span class="kw">if</span> (ok) {
+      <span class="kw">return</span> Health.up()
+        .withDetail(<span class="str">"npci"</span>, <span class="str">"reachable"</span>)
+        .build();
+    }
+    <span class="kw">return</span> Health.down()
+      .withDetail(<span class="str">"npci"</span>, <span class="str">"unreachable"</span>)
+      .build();
+  }
+}</pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <table>
+          <thead><tr><th>Endpoint</th><th>GCP Integration</th></tr></thead>
+          <tbody>
+            <tr><td><code>/actuator/health</code></td><td>Cloud Run health checks</td></tr>
+            <tr><td><code>/actuator/prometheus</code></td><td>Cloud Monitoring via sidecar</td></tr>
+            <tr><td><code>/actuator/metrics</code></td><td>Custom metric export</td></tr>
+            <tr><td><code>/actuator/info</code></td><td>Deployment tracking</td></tr>
+          </tbody>
+        </table>
+        <div class="callout green" style="margin-top:16px;">
+          <strong>Actuator gives GCP the hooks it needs to monitor your app from the inside.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 STRUCTURED LOGGING IN SPRING BOOT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Structured Logging in <span class="hl">Spring Boot</span></h2>
+    <p class="sub">Trace ID auto-attached to every log line</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <div class="code-block" style="margin-bottom:12px;">
+          <div class="lang">pom.xml — Dependency</div>
+          <pre><span class="cmd">&lt;dependency&gt;</span>
+  &lt;groupId&gt;<span class="str">com.google.cloud</span>&lt;/groupId&gt;
+  &lt;artifactId&gt;<span class="str">spring-cloud-gcp-starter-logging</span>&lt;/artifactId&gt;
+<span class="cmd">&lt;/dependency&gt;</span></pre>
+        </div>
+        <div class="code-block" style="margin-bottom:12px;">
+          <div class="lang">application.yml</div>
+          <pre><span class="cmd">spring:</span>
+  <span class="cmd">cloud:</span>
+    <span class="cmd">gcp:</span>
+      <span class="cmd">logging:</span>
+        <span class="cmd">enabled:</span> <span class="str">true</span>
+<span class="cmd">logging:</span>
+  <span class="cmd">level:</span>
+    <span class="cmd">com.example.upi:</span> <span class="str">INFO</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="lang">Logging with Context (Java)</div>
+          <pre><span class="cmd">@Slf4j</span> <span class="cmd">@Service</span>
+<span class="kw">public class</span> TransferService {
+
+  <span class="kw">public</span> TransferResponse <span class="fn">initiateTransfer</span>(...) {
+    log.info(<span class="str">"Transfer initiated"</span>,
+      kv(<span class="str">"txnId"</span>, req.getTxnId()),
+      kv(<span class="str">"fromVpa"</span>, req.getFromVpa()),
+      kv(<span class="str">"amount"</span>, req.getAmount()));
+
+    <span class="cmt">// ... business logic</span>
+
+    log.info(<span class="str">"Transfer completed"</span>,
+      kv(<span class="str">"txnId"</span>, req.getTxnId()),
+      kv(<span class="str">"status"</span>, <span class="str">"SUCCESS"</span>),
+      kv(<span class="str">"latencyMs"</span>, elapsed));
+  }
+}</pre>
+        </div>
+      </div>
+      <div class="split-right">
+        <div class="code-block" style="margin-bottom:16px;">
+          <div class="lang">What Cloud Logging Receives</div>
+          <pre>{
+  <span class="cmd">"severity"</span>: <span class="str">"INFO"</span>,
+  <span class="cmd">"message"</span>: <span class="str">"Transfer initiated"</span>,
+  <span class="cmd">"txnId"</span>: <span class="str">"UPI-20260408-9832"</span>,
+  <span class="cmd">"fromVpa"</span>: <span class="str">"user@okbank"</span>,
+  <span class="cmd">"toVpa"</span>: <span class="str">"merchant@okbank"</span>,
+  <span class="cmd">"amount"</span>: <span class="flag">500.00</span>,
+  <span class="cmd">"trace"</span>: <span class="str">"projects/ford-upi/traces/abc123"</span>,
+  <span class="cmd">"spanId"</span>: <span class="str">"789xyz"</span>
+}</pre>
+        </div>
+        <div class="callout green">
+          <strong>Trace ID auto-attached to every log line — click a log, see the full trace.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 DASHBOARD FOR UPI SERVICE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Building a Dashboard for <span class="hl">UPI Service</span></h2>
+    <p class="sub">The Four Golden Signals from Google SRE</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px;">
+      <thead><tr><th>Signal</th><th>Metric</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Latency</strong></td><td>p50, p95, p99 response time</td><td>p95 &lt; 500ms</td></tr>
+        <tr><td><strong>Traffic</strong></td><td>Requests per second</td><td>Monitor trends</td></tr>
+        <tr><td><strong>Errors</strong></td><td>5xx rate as % of total</td><td>&lt; 0.1%</td></tr>
+        <tr><td><strong>Saturation</strong></td><td>CPU, memory, DB connections</td><td>&lt; 80% utilization</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">Dashboard Layout</div>
+      <pre>┌─────────────────────────────────────────────────┐
+│  UPI Transfer Service — Production Dashboard    │
+├────────────────────┬────────────────────────────┤
+│  Request Rate      │  Error Rate (%)            │
+│  ████████▓▓░░      │  ▁▁▁▁▁▁▁▁▃█▁▁             │
+├────────────────────┼────────────────────────────┤
+│  p95 Latency (ms)  │  Active Instances          │
+│  ▁▁▂▂▃▃▂▂▁▁▂▂      │  ██████░░░░                │
+├────────────────────┼────────────────────────────┤
+│  Transfer Success   │  JVM Heap Usage            │
+│  Rate (%)          │  ████████░░                 │
+├────────────────────┼────────────────────────────┤
+│  DB Connection Pool │  NPCI Response Time        │
+│  ██████▓▓░░        │  ▁▁▁▁▂▂███▂▁               │
+└────────────────────┴────────────────────────────┘</pre>
+    </div>
+    <div class="callout">
+      <strong>One glance should tell you: "Is the system healthy or not?"</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 INCIDENT RESPONSE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Incident Response <span class="hl">Workflow</span></h2>
+    <p class="sub">Real scenario: UPI Transfers failing — resolved in 13 minutes</p>
+  </div>
+  <div class="slide-body">
+    <div class="features">
+      <div class="feat">
+        <div class="num" style="background:var(--red);color:#fff;">14:32</div>
+        <div><div class="ft">ALERT</div><p class="fd">Error rate &gt; 5% on upi-transfer-service</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--orange);color:#fff;">14:33</div>
+        <div><div class="ft">CHECK DASHBOARD</div><p class="fd">Error spike started at 14:30. Latency also spiking. Instance count normal.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--blue);color:#fff;">14:35</div>
+        <div><div class="ft">SEARCH LOGS</div><p class="fd"><code>severity=ERROR</code> &rarr; "HikariPool — Connection is not available"</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--blue);color:#fff;">14:37</div>
+        <div><div class="ft">CHECK TRACE</div><p class="fd">DB spans showing 30s timeout. All other spans normal.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--orange);color:#fff;">14:38</div>
+        <div><div class="ft">ROOT CAUSE</div><p class="fd">Cloud SQL max connections reached. A rogue query holding connections open.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--green);color:#fff;">14:40</div>
+        <div><div class="ft">FIX</div><p class="fd">Kill stuck queries, increase pool timeout, deploy connection pool limit fix.</p></div>
+      </div>
+      <div class="feat">
+        <div class="num" style="background:var(--green);color:#fff;">14:45</div>
+        <div><div class="ft">VERIFY</div><p class="fd">Dashboard shows error rate back to 0%. Write post-incident report.</p></div>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Total time to resolution: 13 minutes.</strong> Without observability, this could take hours of blind debugging.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 SLIs SLOs ALERT HYGIENE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Best Practices &mdash; <span class="hl">SLIs, SLOs &amp; Alert Hygiene</span></h2>
+    <p class="sub">Keep reliability conversations objective</p>
+  </div>
+  <div class="slide-body">
+    <div class="split r60-40">
+      <div class="split-left">
+        <p><strong>Service Level Indicators (SLIs)</strong></p>
+        <table style="margin-bottom:16px;">
+          <thead><tr><th>SLI</th><th>Measurement</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Availability</strong></td><td>% of successful health checks over 30 days</td></tr>
+            <tr><td><strong>Latency</strong></td><td>% of requests served under 500ms</td></tr>
+            <tr><td><strong>Correctness</strong></td><td>% of transfers with correct final status</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Service Level Objectives (SLOs)</strong></p>
+        <table>
+          <thead><tr><th>SLO</th><th>Target</th><th>Error Budget</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Availability</strong></td><td>99.9% (three nines)</td><td>43 min downtime/month</td></tr>
+            <tr><td><strong>Latency</strong></td><td>95% of requests &lt; 500ms</td><td>5% can be slower</td></tr>
+            <tr><td><strong>Transfer success</strong></td><td>99.95%</td><td>0.05% allowed failures</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="split-right">
+        <p><strong>Avoid Alert Fatigue</strong></p>
+        <div class="compare">
+          <div class="compare-box good">
+            <div class="compare-head">Do</div>
+            <div class="compare-body">
+              <div class="scenario-item"><span class="dot-red">&#10003;</span><div>Alert on <strong>symptoms</strong> (high error rate)</div></div>
+              <div class="scenario-item"><span class="dot-red">&#10003;</span><div>Set <strong>meaningful thresholds</strong></div></div>
+              <div class="scenario-item"><span class="dot-red">&#10003;</span><div>Include <strong>runbook links</strong> in alerts</div></div>
+              <div class="scenario-item"><span class="dot-red">&#10003;</span><div>Use <strong>severity levels</strong></div></div>
+            </div>
+          </div>
+          <div class="compare-box bad">
+            <div class="compare-head">Don't</div>
+            <div class="compare-body">
+              <div class="scenario-item"><span class="dot-red">&#10007;</span><div>Alert on <strong>causes</strong> (single pod restart)</div></div>
+              <div class="scenario-item"><span class="dot-red">&#10007;</span><div>Alert on every minor fluctuation</div></div>
+              <div class="scenario-item"><span class="dot-red">&#10007;</span><div>Send vague "something is wrong" alerts</div></div>
+              <div class="scenario-item"><span class="dot-red">&#10007;</span><div>Make <strong>everything</strong> critical</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px;">
+          <strong>If your team ignores alerts, your alerting is broken — not your team.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 14 KEY TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from this section</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Observability = Metrics + Logs + Traces</strong> working together</li>
+      <li><strong>Cloud Operations Suite</strong> gives you everything built-in — no extra infrastructure</li>
+      <li><strong>Structured logging</strong> is the single most impactful practice for production debugging</li>
+      <li><strong>Dashboards</strong> should reflect the four golden signals: latency, traffic, errors, saturation</li>
+      <li><strong>Alerts</strong> should be actionable — every alert needs a clear next step</li>
+      <li><strong>SLOs and error budgets</strong> keep reliability conversations objective</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 15 DAY 36 COMPLETE ─── -->
+<div class="slide slide--end">
+  <h2>Day 36 Complete!</h2>
+  <p>You now have the complete production toolkit:</p>
+  <p style="font-size:1.1rem;opacity:0.8;line-height:1.8;">
+    CI/CD with Tekton &amp; Cloud Build &middot; Messaging with Pub/Sub<br>
+    Monitoring with Cloud Operations Suite &middot; Alerting with SLOs
+  </p>
+  <div class="next-box">Your UPI service isn't just running — it's observable, automated, and production-ready. &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>
