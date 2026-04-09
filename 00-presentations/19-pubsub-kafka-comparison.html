@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 19 — Kafka vs Pub/Sub: Mental Model Shift for Kafka Administrators</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 TITLE ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Pub/Sub Deep Dive</div>
+  <h1>Kafka vs Pub/Sub</h1>
+  <p class="tagline">Mental Model Shift for Kafka Administrators</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 CORE PHILOSOPHY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Core <span class="hl">Philosophy</span></h2>
+    <p class="sub">Two fundamentally different worldviews on messaging</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka: YOU Control Consumption</div>
+        <div class="compare-body">
+          <p><strong>Kafka is a distributed log.</strong> You decide where to read from, how fast to consume, when to commit, and when to replay. The broker stores events. You are the driver.</p>
+          <p style="margin-top:12px;"><strong>Model:</strong> Log + Control</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub: SYSTEM Ensures Delivery</div>
+        <div class="compare-body">
+          <p><strong>Pub/Sub is a delivery system.</strong> You publish, Google delivers. Messages arrive, you acknowledge. The system handles retries, scaling, and routing. Google is the driver.</p>
+          <p style="margin-top:12px;"><strong>Model:</strong> Delivery + Automation</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>This single distinction explains every difference that follows.</strong> Kafka gives you a log to navigate. Pub/Sub gives you a delivery guarantee to rely on.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 MASTER COMPARISON TABLE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Master <span class="hl">Comparison Table</span></h2>
+    <p class="sub">Mapping every Kafka concept to its Pub/Sub equivalent</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Kafka Concept</th><th>Pub/Sub Equivalent</th><th>Key Difference</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Topic</strong></td><td>Topic</td><td>Same concept, different internals</td></tr>
+        <tr><td><strong>Partition</strong></td><td>Hidden (ordering key)</td><td>No visible partitions; use ordering keys for order</td></tr>
+        <tr><td><strong>Consumer Group</strong></td><td>Subscription</td><td>Each subscription = independent consumer group</td></tr>
+        <tr><td><strong>Offset</strong></td><td>ACK / NACK</td><td>No offset tracking; binary ACK model</td></tr>
+        <tr><td><strong>Commit</strong></td><td>ACK</td><td>ACK removes the message; no position to commit</td></tr>
+        <tr><td><strong>Rebalance</strong></td><td>Fully managed</td><td>No partition assignment, no rebalance storms</td></tr>
+        <tr><td><strong>Broker cluster</strong></td><td>Fully managed service</td><td>Zero infrastructure to manage</td></tr>
+      </tbody>
+    </table>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>Key insight:</strong> Most Kafka complexity (partitions, offsets, rebalancing, brokers) simply does not exist in Pub/Sub.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 NO OFFSET MANAGEMENT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>No Offset Management &mdash; <span class="hl">The Biggest Shift</span></h2>
+    <p class="sub">The concept that trips up every Kafka administrator</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka: Offset-Based Consumption</div>
+        <div class="compare-body">
+          <p>Consumer reads message at <strong>offset 100</strong>.</p>
+          <p>Consumer processes message.</p>
+          <p>Consumer <strong>commits offset 101</strong>.</p>
+          <p>Consumer can <strong>reset to offset 50</strong> and replay.</p>
+          <p style="margin-top:8px;"><strong>YOU control position. YOU decide what to read next.</strong></p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub: ACK-Based Delivery</div>
+        <div class="compare-body">
+          <p>Message is <strong>delivered</strong> to subscriber.</p>
+          <p>Subscriber processes message.</p>
+          <p>Subscriber sends <strong>ACK</strong>.</p>
+          <p>Message is <strong>gone</strong>. No offset. No position.</p>
+          <p style="margin-top:8px;"><strong>No offset concept. No position tracking. No replay cursor.</strong></p>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>Stop thinking in offsets.</strong> In Pub/Sub, there is no log position. There is only: delivered, acknowledged, or pending retry.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 SUBSCRIPTION vs CONSUMER GROUP ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Subscription vs <span class="hl">Consumer Group</span></h2>
+    <p class="sub">Each Pub/Sub subscription = a separate Kafka consumer group</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Publisher (Transfer Service)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Topic: transaction-completed</div>
+      <div class="adown">&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card gb">
+        <div class="ct">Subscription A</div>
+        <p>Notification Service</p>
+        <p style="font-size:0.85rem;opacity:0.7;">Gets ALL messages independently</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Subscription B</div>
+        <p>Fraud Detection Service</p>
+        <p style="font-size:0.85rem;opacity:0.7;">Gets ALL messages independently</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">Subscription C</div>
+        <p>Analytics Service</p>
+        <p style="font-size:0.85rem;opacity:0.7;">Gets ALL messages independently</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Kafka Model</th><th>Pub/Sub Model</th></tr></thead>
+      <tbody>
+        <tr><td>Multiple consumers in <strong>same group</strong> = load balancing</td><td>Multiple subscribers on <strong>one subscription</strong> = load balancing</td></tr>
+        <tr><td>Multiple <strong>consumer groups</strong> on same topic = fan-out</td><td>Multiple <strong>subscriptions</strong> on same topic = fan-out</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 PULL vs PUSH vs KAFKA ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Pull vs Push vs <span class="hl">Kafka</span></h2>
+    <p class="sub">Kafka only pulls. Pub/Sub offers both models.</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Delivery Model</th><th>Kafka</th><th>Pub/Sub Pull</th><th>Pub/Sub Push</th></tr></thead>
+      <tbody>
+        <tr><td><strong>How it works</strong></td><td>Consumer polls broker</td><td>Subscriber polls Pub/Sub</td><td>Pub/Sub sends HTTP POST to endpoint</td></tr>
+        <tr><td><strong>Who controls rate</strong></td><td>Consumer</td><td>Subscriber</td><td>Pub/Sub (backpressure via HTTP responses)</td></tr>
+        <tr><td><strong>Kafka equivalent</strong></td><td>Native model</td><td>Very similar to Kafka consumer</td><td><strong style="color:var(--red)">No Kafka equivalent</strong></td></tr>
+        <tr><td><strong>Best for</strong></td><td>Long-running consumers</td><td>GKE, VMs, steady workloads</td><td>Cloud Run, Cloud Functions, webhooks</td></tr>
+        <tr><td><strong>Scale to zero</strong></td><td>No</td><td>No</td><td><strong style="color:var(--green)">Yes</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout orange">
+      <strong>Push is completely alien to the Kafka mindset.</strong> In Push mode, the subscriber does not poll. It exposes an HTTPS endpoint, and Pub/Sub delivers messages by calling it. Think webhooks, not consumers.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 ACK vs OFFSET COMMIT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>ACK vs Offset Commit &mdash; <span class="hl">Critical Difference</span></h2>
+    <p class="sub">This is where Kafka admins get burned the most</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka: Offset Commit</div>
+        <div class="compare-body">
+          <p>1. Process message</p>
+          <p>2. Commit offset to __consumer_offsets</p>
+          <p>3. Offset stored in broker</p>
+          <p>4. <strong>Can reset offset and replay anytime</strong></p>
+          <p style="margin-top:8px;">Message remains in the log regardless of commits.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub: ACK</div>
+        <div class="compare-body">
+          <p>1. Process message</p>
+          <p>2. Send ACK</p>
+          <p>3. Message removed from subscription</p>
+          <p>4. <strong>No replay by default</strong></p>
+          <p style="margin-top:8px;">No offset tracking. No position management.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>If you ACK, the message is gone forever from that subscription.</strong> There is no "reset offset to replay." This is the single most important behavioral difference between Kafka and Pub/Sub. Internalize it.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 RETENTION MODEL ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Retention <span class="hl">Model</span></h2>
+    <p class="sub">Kafka = event store. Pub/Sub = event delivery system.</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka Retention</div>
+        <div class="compare-body">
+          <p><strong>Time-based:</strong> days, weeks, or forever (log compaction)</p>
+          <p><strong>Replay is normal:</strong> consumers routinely reset offsets</p>
+          <p><strong>Log compaction:</strong> keep latest value per key indefinitely</p>
+          <p style="margin-top:8px;">Kafka is designed as a durable event store.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub Retention</div>
+        <div class="compare-body">
+          <p><strong>Default:</strong> 7 days (configurable up to 31 days)</p>
+          <p><strong>Replay is limited:</strong> Seek to timestamp only</p>
+          <p><strong>No log compaction:</strong> not an event store</p>
+          <p style="margin-top:8px;">Pub/Sub is designed for event delivery, not storage.</p>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Aspect</th><th>Kafka</th><th>Pub/Sub</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Primary purpose</strong></td><td>Event log / event store</td><td>Event delivery / routing</td></tr>
+        <tr><td><strong>Retention mindset</strong></td><td>"Keep everything, replay when needed"</td><td>"Deliver reliably, discard after ACK"</td></tr>
+        <tr><td><strong>Long-term storage</strong></td><td>Built-in</td><td>Use BigQuery, GCS, or Dataflow</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 PARTITION vs PARALLELISM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Partitions vs <span class="hl">Parallelism</span></h2>
+    <p class="sub">Kafka partitions have no direct equivalent in Pub/Sub</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Concept</th><th>Kafka</th><th>Pub/Sub</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Scaling unit</strong></td><td>Partition</td><td>Hidden / automatic</td></tr>
+        <tr><td><strong>Parallelism</strong></td><td>1 consumer per partition max</td><td>Unlimited concurrent subscribers</td></tr>
+        <tr><td><strong>Ordering</strong></td><td>Guaranteed per partition</td><td>Guaranteed per ordering key</td></tr>
+        <tr><td><strong>Key routing</strong></td><td>Message key &rarr; partition hash</td><td>Ordering key &rarr; internal routing</td></tr>
+        <tr><td><strong>Scaling action</strong></td><td>Add partitions (cannot reduce)</td><td>Nothing &mdash; automatic</td></tr>
+        <tr><td><strong>Rebalancing</strong></td><td>Triggered on partition/consumer change</td><td>Not applicable</td></tr>
+      </tbody>
+    </table>
+    <div class="compare">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka: Partition Thinking</div>
+        <div class="compare-body">
+          <p>"I need 12 partitions for 12 consumers. Messages with the same user ID go to the same partition for ordering."</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub: Ordering Key Thinking</div>
+        <div class="compare-body">
+          <p>"I set an ordering key on the sender VPA. Pub/Sub handles parallelism and ordering internally."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 REPROCESSING / REPLAY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Reprocessing and <span class="hl">Replay</span></h2>
+    <p class="sub">Kafka's strongest feature vs Pub/Sub's weakest area</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka Replay</div>
+        <div class="compare-body">
+          <p><strong>Reset offset to any position:</strong> beginning, end, timestamp, specific offset</p>
+          <p><strong>Replay is a first-class operation.</strong></p>
+          <p><strong>Event sourcing patterns rely on full replay.</strong></p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub "Replay"</div>
+        <div class="compare-body">
+          <p><strong>Seek to timestamp:</strong> limited, requires retained messages</p>
+          <p><strong>Snapshot seek:</strong> restore subscription state to a snapshot</p>
+          <p><strong>Re-publish:</strong> manually re-publish messages from external store</p>
+          <p><strong>DLQ replay:</strong> reprocess failed messages from dead letter topic</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>Pub/Sub is NOT designed for long-term replay.</strong> If you need event sourcing or full reprocessing, store events in BigQuery or GCS at publish time and replay from there. Do not treat Pub/Sub as a Kafka-style event log.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 FAILURE HANDLING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Failure <span class="hl">Handling</span></h2>
+    <p class="sub">Kafka: you manage retries. Pub/Sub: retries are automatic.</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka: Manual Retry Control</div>
+        <div class="compare-body">
+          <p><strong>You manage retry logic</strong> in consumer code</p>
+          <p><strong>You control offset commits</strong> &mdash; don't commit on failure</p>
+          <p><strong>You build DLQ</strong> by producing failed messages to a separate topic</p>
+          <p><strong>You handle poison pills</strong> with custom error handlers</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub: Built-in Retry</div>
+        <div class="compare-body">
+          <p><strong>No ACK = automatic retry</strong> after ack deadline expires</p>
+          <p><strong>NACK = immediate retry</strong></p>
+          <p><strong>Dead letter topic</strong> is a built-in feature with max delivery attempts</p>
+          <p><strong>Exponential backoff</strong> configurable via retry policy</p>
+        </div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Failure Scenario</th><th>Kafka</th><th>Pub/Sub</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Consumer crashes</strong></td><td>Rebalance, another consumer picks up</td><td>Message redelivered after ack deadline</td></tr>
+        <tr><td><strong>Processing fails</strong></td><td>Don't commit offset; custom retry logic</td><td>NACK or let ack deadline expire</td></tr>
+        <tr><td><strong>Repeated failures</strong></td><td>Manual DLQ implementation</td><td><strong style="color:var(--green)">Built-in dead letter topic</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 CONSUMER SCALING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Consumer <span class="hl">Scaling</span></h2>
+    <p class="sub">Kafka: manual partition management. Pub/Sub: fully automatic.</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka Scaling</div>
+        <div class="compare-body">
+          <p><strong>Step 1:</strong> Estimate throughput, decide partition count up front</p>
+          <p><strong>Step 2:</strong> Add consumers (max = partition count per group)</p>
+          <p><strong>Step 3:</strong> Rebalance triggered &mdash; pause in consumption</p>
+          <p><strong>Step 4:</strong> Need more parallelism? Add partitions (irreversible)</p>
+          <p style="margin-top:8px;">Consumer group coordination via group coordinator protocol.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub Scaling</div>
+        <div class="compare-body">
+          <p><strong>Step 1:</strong> Create subscription</p>
+          <p><strong>Step 2:</strong> Add subscribers. No limit.</p>
+          <p><strong>That's it.</strong></p>
+          <p style="margin-top:24px;">No partition management. No consumer group coordination. No rebalance storms. No ceiling on parallelism.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>In Pub/Sub, scaling subscribers is like scaling web servers.</strong> Just add more instances. The system distributes messages automatically.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 INFRASTRUCTURE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Infrastructure <span class="hl">Comparison</span></h2>
+    <p class="sub">What you manage in Kafka vs what Google manages in Pub/Sub</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card rb">
+        <div class="ct">Kafka: You Manage</div>
+        <p><strong>Broker cluster</strong> &mdash; 3+ nodes minimum</p>
+        <p><strong>ZooKeeper / KRaft</strong> &mdash; metadata coordination</p>
+        <p><strong>Disk capacity</strong> &mdash; retention drives storage needs</p>
+        <p><strong>Network</strong> &mdash; inter-broker, client-broker connectivity</p>
+        <p><strong>Monitoring</strong> &mdash; JMX metrics, lag tracking</p>
+        <p><strong>Security</strong> &mdash; SSL, SASL, ACLs</p>
+        <p><strong>Upgrades</strong> &mdash; rolling restarts, version compatibility</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Pub/Sub: Google Manages</div>
+        <p><strong>Zero clusters</strong> &mdash; no brokers to provision</p>
+        <p><strong>Zero coordination</strong> &mdash; no ZooKeeper / KRaft</p>
+        <p><strong>Zero disk planning</strong> &mdash; storage is automatic</p>
+        <p><strong>Zero network config</strong> &mdash; global by default</p>
+        <p><strong>Built-in monitoring</strong> &mdash; Cloud Monitoring integration</p>
+        <p><strong>Built-in security</strong> &mdash; IAM, encryption at rest</p>
+        <p><strong>Zero upgrades</strong> &mdash; always current</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Pub/Sub eliminates the entire Kafka operations role.</strong> No on-call for broker failures. No disk alerts. No rebalance investigations.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 14 UPI SCENARIO IN BOTH ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>UPI Transfer Event &mdash; <span class="hl">Kafka vs Pub/Sub</span></h2>
+    <p class="sub">Same use case, radically different operational complexity</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:20px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Kafka Architecture</div>
+        <div class="compare-body">
+          <p><strong>Topic:</strong> upi-transactions (6 partitions)</p>
+          <p><strong>Key:</strong> sender VPA (for partition routing)</p>
+          <p><strong>Consumer Group 1:</strong> notification-group (3 consumers)</p>
+          <p><strong>Consumer Group 2:</strong> fraud-detection-group (3 consumers)</p>
+          <p><strong>Consumer Group 3:</strong> analytics-group (2 consumers)</p>
+          <p style="margin-top:8px;"><strong>You manage:</strong> partition count, consumer group lag, offset commits, rebalancing, broker health, retention policy</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Pub/Sub Architecture</div>
+        <div class="compare-body">
+          <p><strong>Topic:</strong> upi-transaction-completed</p>
+          <p><strong>Subscription 1:</strong> notification-sub</p>
+          <p><strong>Subscription 2:</strong> fraud-detection-sub</p>
+          <p><strong>Subscription 3:</strong> analytics-sub</p>
+          <p style="margin-top:8px;"><strong>You manage:</strong> ACK deadlines, dead letter config. That's it. Scaling, delivery, and retries are automatic.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Same business outcome. Dramatically less operational burden with Pub/Sub.</strong> The trade-off: less control over consumption behavior.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 15 WHEN TO USE WHAT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>When to Use <span class="hl">What</span></h2>
+    <p class="sub">Architect's decision framework</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card bb">
+        <div class="ct">Use Kafka When</div>
+        <p><strong>Full replay capability</strong> is a hard requirement</p>
+        <p><strong>Event sourcing</strong> is the architectural pattern</p>
+        <p><strong>Strict ordering + fine-grained control</strong> over consumption</p>
+        <p><strong>Log compaction</strong> for materialized views</p>
+        <p><strong>Ultra-low latency</strong> (sub-10ms) is critical</p>
+        <p><strong>Multi-cloud / on-prem</strong> deployment needed</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Use Pub/Sub When</div>
+        <p><strong>Decoupling services</strong> is the primary goal</p>
+        <p><strong>Serverless scaling</strong> from zero to millions</p>
+        <p><strong>Zero infrastructure management</strong> is desired</p>
+        <p><strong>Event-driven microservices</strong> on GCP</p>
+        <p><strong>Push-based delivery</strong> to Cloud Run / Functions</p>
+        <p><strong>Global message routing</strong> across regions</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>On GCP, start with Pub/Sub.</strong> Move to Kafka (Confluent Cloud or self-managed) only when you need specific Kafka features that Pub/Sub cannot provide.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 16 MENTAL MODEL SHIFT SUMMARY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Mental Model <span class="hl">Shift</span></h2>
+    <p class="sub">One statement that resets the brain</p>
+  </div>
+  <div class="slide-body">
+    <div class="callout green" style="font-size:1.4rem;text-align:center;padding:40px 30px;margin-bottom:30px;">
+      <strong>"In Kafka, YOU are responsible.<br>In Pub/Sub, GOOGLE is responsible."</strong>
+    </div>
+    <table>
+      <thead><tr><th>Responsibility</th><th>Kafka</th><th>Pub/Sub</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Message delivery</strong></td><td>You poll and manage offsets</td><td>Google delivers and tracks ACKs</td></tr>
+        <tr><td><strong>Scaling</strong></td><td>You manage partitions and consumers</td><td>Google auto-scales</td></tr>
+        <tr><td><strong>Failure recovery</strong></td><td>You build retry + DLQ logic</td><td>Google retries and routes to DLQ</td></tr>
+        <tr><td><strong>Infrastructure</strong></td><td>You manage clusters and disks</td><td>Google manages everything</td></tr>
+        <tr><td><strong>Ordering</strong></td><td>You design partition keys</td><td>You set ordering keys, Google handles the rest</td></tr>
+        <tr><td><strong>Replay</strong></td><td>You reset offsets</td><td>You use Seek (limited) or external stores</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 17 FINAL MAPPING CHEAT SHEET ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Final Mapping <span class="hl">Cheat Sheet</span></h2>
+    <p class="sub">Print this. Keep it next to your keyboard.</p>
+  </div>
+  <div class="slide-body">
+    <table>
+      <thead><tr><th>Kafka</th><th>Pub/Sub</th></tr></thead>
+      <tbody>
+        <tr><td>Topic</td><td>Topic</td></tr>
+        <tr><td>Partition</td><td>Ordering key (no visible partitions)</td></tr>
+        <tr><td>Consumer group</td><td>Subscription</td></tr>
+        <tr><td>Offset</td><td>No equivalent (ACK-based)</td></tr>
+        <tr><td>Commit offset</td><td>ACK</td></tr>
+        <tr><td>Don't commit</td><td>NACK or let deadline expire</td></tr>
+        <tr><td>Reset offset</td><td>Seek to timestamp (limited)</td></tr>
+        <tr><td>Consumer poll loop</td><td>Pull subscription</td></tr>
+        <tr><td>No equivalent</td><td>Push subscription (webhook)</td></tr>
+        <tr><td>Rebalance</td><td>Automatic (invisible)</td></tr>
+        <tr><td>Broker</td><td>Fully managed (no equivalent)</td></tr>
+        <tr><td>ZooKeeper / KRaft</td><td>Not applicable</td></tr>
+        <tr><td>Log compaction</td><td>Not available</td></tr>
+        <tr><td>Custom DLQ topic</td><td>Built-in dead letter topic</td></tr>
+        <tr><td>Schema Registry</td><td>Pub/Sub Schema</td></tr>
+        <tr><td>Kafka Connect</td><td>Dataflow / Pub/Sub integrations</td></tr>
+        <tr><td>Kafka Streams</td><td>Dataflow (Apache Beam)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 18 KEY TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Takeaways</span></h2>
+    <p class="sub">The shifts every Kafka administrator must internalize</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>No offsets</strong> &mdash; Stop thinking in log positions. Pub/Sub uses ACK/NACK, not offset commits.</li>
+      <li><strong>ACK means gone</strong> &mdash; Once acknowledged, a message is removed. There is no "replay from offset 0."</li>
+      <li><strong>Subscription = Consumer Group</strong> &mdash; Each subscription is an independent, isolated message stream.</li>
+      <li><strong>No partitions to manage</strong> &mdash; Parallelism is automatic. Use ordering keys when order matters.</li>
+      <li><strong>Push delivery exists</strong> &mdash; A delivery model with no Kafka equivalent. Embrace it for serverless.</li>
+      <li><strong>Retries are built in</strong> &mdash; No ACK = automatic redelivery. Dead letter topics are a configuration, not custom code.</li>
+      <li><strong>Zero infrastructure</strong> &mdash; No brokers, no ZooKeeper, no disks, no upgrades, no on-call.</li>
+      <li><strong>Pub/Sub is a delivery system, not an event store</strong> &mdash; For long-term storage, use BigQuery or GCS.</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 19 END ─── -->
+<div class="slide slide--end">
+  <h2>Kafka to Pub/Sub</h2>
+  <p>Bridge Complete</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Next: Spring Boot Integration + Production Patterns</p>
+  <div class="next-box">Continue &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

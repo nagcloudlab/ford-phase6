@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 18 — GCP Pub/Sub Level 2: Core Mechanics</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 HERO ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Pub/Sub Deep Dive</div>
+  <h1>GCP Pub/Sub &mdash; Level 2</h1>
+  <p class="tagline">Core Mechanics for Production Systems</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 PULL MODEL OVERVIEW ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Pull Model <span class="hl">Overview</span></h2>
+    <p class="sub">The subscriber controls when and how fast messages are consumed</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card bb">
+        <div class="ct">How Pull Works</div>
+        <p>The subscriber actively polls Pub/Sub for new messages. The consumer decides when to fetch, how many to fetch, and how fast to process.</p>
+        <p style="margin-top:12px;"><strong>Requires polling</strong> &mdash; no messages arrive unless the subscriber asks for them.</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Mental Model: Worker Pattern</div>
+        <p><em>"I will take messages when I am ready."</em></p>
+        <p style="margin-top:12px;">Think of a worker at a counter &mdash; they go to the window, pick up the next task, complete it, then go back for more. The worker controls the pace.</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Consumer-Controlled Rate</div><p class="fd">Backpressure is built in &mdash; slow consumers simply pull less often</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Best for Backend Services</div><p class="fd">Long-running services on VMs, GKE, or Spring Boot applications</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Requires Client Library</div><p class="fd">Subscriber needs the Pub/Sub SDK or gcloud CLI to pull messages</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 PUSH MODEL OVERVIEW ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Push Model <span class="hl">Overview</span></h2>
+    <p class="sub">Pub/Sub delivers messages directly to your HTTP endpoint</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card gb">
+        <div class="ct">How Push Works</div>
+        <p>Pub/Sub sends an HTTP POST request to a configured endpoint every time a new message arrives. No polling required &mdash; near real-time delivery.</p>
+        <p style="margin-top:12px;"><strong>Requires a public HTTPS endpoint</strong> that can receive POST requests.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Mental Model: Webhook Pattern</div>
+        <p><em>"I will send immediately when an event happens."</em></p>
+        <p style="margin-top:12px;">Think of a doorbell &mdash; the moment someone arrives, the bell rings. You do not need to keep checking the door.</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">No Polling Needed</div><p class="fd">Messages arrive at your endpoint automatically &mdash; near real-time</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Perfect for Cloud Run</div><p class="fd">Services scale to zero and wake on demand when messages arrive</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">ACK via HTTP Status</div><p class="fd">Return 200 = acknowledged. Return 4xx/5xx = Pub/Sub retries delivery</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 PULL vs PUSH COMPARISON ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Pull vs Push <span class="hl">Comparison</span></h2>
+    <p class="sub">Choose the right delivery model based on your architecture</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Dimension</th><th>Pull</th><th>Push</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Control</strong></td><td>Consumer controls the rate</td><td>Pub/Sub controls the rate</td></tr>
+        <tr><td><strong>Scaling</strong></td><td>You manage concurrency</td><td>Auto-scales with push config</td></tr>
+        <tr><td><strong>Risk</strong></td><td>Under-fetching (messages pile up)</td><td>Overwhelming the endpoint</td></tr>
+        <tr><td><strong>Use Case</strong></td><td>Backend workers, batch processing, GKE</td><td>Cloud Run, Cloud Functions, webhooks</td></tr>
+        <tr><td><strong>Mental Model</strong></td><td>Worker Pattern &mdash; "I fetch when ready"</td><td>Webhook Pattern &mdash; "Send me immediately"</td></tr>
+        <tr><td><strong>Endpoint</strong></td><td>No public endpoint needed</td><td>Public HTTPS endpoint required</td></tr>
+        <tr><td><strong>Client Library</strong></td><td>Required</td><td>Not required (just HTTP)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout green">
+      <strong>Rule of thumb:</strong> Use Pull for always-on backend services. Use Push for serverless and scale-to-zero architectures.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 PULL vs PUSH COMMANDS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Pull vs Push <span class="hl">Commands</span></h2>
+    <p class="sub">Creating subscriptions with gcloud CLI</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Create a Pull Subscription</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">notification-pull-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--ack-deadline</span>=30</pre>
+    </div>
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Create a Push Subscription</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">notification-push-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--push-endpoint</span>=https://notification-service-abc123.a.run.app/pubsub/receive \
+  <span class="flag">--ack-deadline</span>=30</pre>
+    </div>
+    <div class="callout">
+      <strong>Key difference:</strong> The <code>--push-endpoint</code> flag is what makes a subscription push instead of pull. Without it, the subscription defaults to pull.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 ACK -- THE MOST IMPORTANT CONCEPT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>ACK &mdash; The <span class="hl">Most Important</span> Concept</h2>
+    <p class="sub">ACK = "I confirm I processed this message successfully"</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Message Delivered to Subscriber</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Subscriber Processes Message</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">ACK Sent &mdash; Message Removed from Subscription</div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">ACK = Success Confirmation</div><p class="fd">Tells Pub/Sub: "I received and processed this. You can remove it."</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">NACK = Explicit Failure</div><p class="fd">Tells Pub/Sub: "I failed. Please send this message again."</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">No Response = Assumed Failure</div><p class="fd">If the subscriber crashes or times out, Pub/Sub redelivers automatically.</p></div>
+      </div>
+    </div>
+    <div class="callout green" style="margin-top:16px;">
+      <strong>This is the HEART of Pub/Sub.</strong> The entire reliability model revolves around acknowledgements. Every design decision you make connects back to ACK behavior.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 WHAT HAPPENS WITHOUT ACK ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What Happens <span class="hl" style="color:var(--red)">Without ACK?</span></h2>
+    <p class="sub">No ACK = Pub/Sub assumes failure and sends the message again</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Message Delivered</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Subscriber Processes (no ACK sent)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">ACK Deadline Expires &mdash; Pub/Sub Thinks It Failed</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--orange);background:#fff8f0;">Message Redelivered (duplicate!)</div>
+    </div>
+    <div class="callout red" style="margin-bottom:16px;">
+      <strong>At-least-once delivery:</strong> Pub/Sub guarantees every message is delivered at least once. The same message MAY arrive multiple times. This is by design, not a bug.
+    </div>
+    <div class="cards c3">
+      <div class="card rb">
+        <div class="ct">Subscriber Crashes</div>
+        <p>No ACK sent. Message redelivered to another subscriber instance.</p>
+      </div>
+      <div class="card rb">
+        <div class="ct">Processing Too Slow</div>
+        <p>ACK deadline passes before processing finishes. Redelivered as duplicate.</p>
+      </div>
+      <div class="card rb">
+        <div class="ct">Network Failure</div>
+        <p>ACK sent but lost in transit. Pub/Sub never received it. Redelivered.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 ACK REAL EXAMPLE (UPI) ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>ACK Failure &mdash; <span class="hl" style="color:var(--red)">Real-World UPI Scenario</span></h2>
+    <p class="sub">When ACK fails, real money problems happen</p>
+  </div>
+  <div class="slide-body">
+    <div class="scenario-box" style="margin-bottom:24px;">
+      <h3>Scenario: Double Charge on Order #123</h3>
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div><div class="ft">Message Arrives</div><p class="fd">Order #123: Transfer Rs.5000 from user-A to merchant-B</p></div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div><div class="ft">Processing Succeeds</div><p class="fd">Payment processed. Rs.5000 debited from user-A, credited to merchant-B.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div><div class="ft">ACK Fails</div><p class="fd">Network blip &mdash; ACK never reaches Pub/Sub. Pub/Sub thinks processing failed.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div><div class="ft">Message Redelivered</div><p class="fd">Pub/Sub sends Order #123 again. Subscriber processes it again.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">5</div>
+          <div><div class="ft">Double Charge!</div><p class="fd">Rs.5000 debited TWICE from user-A. Customer dispute. Compliance issue.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>This is not a theoretical problem.</strong> In production payment systems, this WILL happen. The solution is idempotency &mdash; covered in the next slide.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 IDEMPOTENCY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Idempotency &mdash; <span class="hl">Survival Skill</span></h2>
+    <p class="sub">Because duplicate messages WILL happen. Your code must handle them.</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Bad: No Duplicate Protection</div>
+        <div class="compare-body">
+          <div class="code-block">
+            <pre><code>void processPayment(String orderId) {
+    // Charges user every time it runs
+    debitAccount(orderId, amount);
+    creditMerchant(orderId, amount);
+    // Duplicate message = double charge!
+}</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Good: Idempotent Processing</div>
+        <div class="compare-body">
+          <div class="code-block">
+            <pre><code>void processPayment(String orderId) {
+    if (alreadyProcessed(orderId)) {
+        log.info("Duplicate, skipping: {}", orderId);
+        return; // Safe -- no double charge
+    }
+    debitAccount(orderId, amount);
+    creditMerchant(orderId, amount);
+    markAsProcessed(orderId);
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cards c3">
+      <div class="card gb">
+        <div class="ct">Store Processed IDs</div>
+        <p>Keep a set of processed message or transaction IDs. Check before processing.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Use DB Uniqueness</div>
+        <p>Add a unique constraint on transaction ID. Let the database reject duplicates.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Use Status Flags</div>
+        <p>Track processing status (PENDING, COMPLETED). Only process if PENDING.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 ACK DEADLINE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>ACK Deadline &mdash; <span class="hl" style="color:var(--red)">Hidden Trap</span></h2>
+    <p class="sub">Pub/Sub gives you a limited window to acknowledge. Miss it and duplicates appear.</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Message Delivered (clock starts: 10 seconds default)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--orange);background:#fff8f0;">Processing takes 15 seconds...</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Deadline expires at 10s &mdash; Pub/Sub assumes FAILURE</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Message redelivered &mdash; duplicate processing even though code is correct</div>
+    </div>
+    <div class="callout red" style="margin-bottom:20px;">
+      <strong>Your code may be perfectly correct, but if it takes too long, Pub/Sub will send the message again.</strong> The deadline is the silent source of most duplicate issues.
+    </div>
+    <div class="cards c3">
+      <div class="card gb">
+        <div class="ct">Fix 1: Extend Deadline</div>
+        <p>Set <code>--ack-deadline=60</code> or use <code>modifyAckDeadline</code> API to extend during processing.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Fix 2: Process Faster</div>
+        <p>Offload heavy work to background threads. ACK quickly, process asynchronously.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Fix 3: Async Processing</div>
+        <p>ACK immediately, write to a local queue or DB, process later at your own pace.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 MANUAL ACK COMMANDS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Manual ACK <span class="hl">Commands</span></h2>
+    <p class="sub">Pull messages without auto-acknowledgement, then ACK explicitly</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 1: Pull Without Auto-ACK</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions pull <span class="str">notification-sub</span> \
+  <span class="flag">--auto-ack</span>=false \
+  <span class="flag">--limit</span>=1 \
+  <span class="flag">--format</span>=json</pre>
+    </div>
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 2: Process the Message (inspect data, run business logic)</div>
+      <pre><span class="cmt"># The pull response includes an ACK_ID for each message</span>
+<span class="cmt"># Example ACK_ID: "XXXXXXXXX-YYYYY-ZZZZZ"</span></pre>
+    </div>
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 3: Acknowledge with ACK ID</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions ack <span class="str">notification-sub</span> \
+  <span class="flag">--ack-ids</span>="XXXXXXXXX-YYYYY-ZZZZZ"</pre>
+    </div>
+    <div class="callout green">
+      <strong>Manual ACK gives you full control.</strong> Message stays in the subscription until you explicitly confirm successful processing.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 RETRY BEHAVIOR ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Retry Behavior &mdash; <span class="hl">Automatic and Infinite</span></h2>
+    <p class="sub">Pub/Sub retries failed messages forever unless you configure limits</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Message Delivered</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Processing Fails (NACK or timeout)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--orange);background:#fff8f0;">Pub/Sub Waits, Then Retries</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Fails Again</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--orange);background:#fff8f0;">Retries Again... and Again... Forever</div>
+    </div>
+    <div class="callout red" style="margin-bottom:20px;">
+      <strong>Poison Message Problem:</strong> A malformed or corrupt message that always fails will be retried infinitely, wasting resources and blocking other messages. Without a Dead Letter Queue, there is no escape.
+    </div>
+    <div class="cards c2">
+      <div class="card rb">
+        <div class="ct">Default Behavior</div>
+        <p>Retry is automatic. There is no retry limit by default. Exponential backoff applies between retries.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">The Solution</div>
+        <p>Configure a Dead Letter Queue (DLQ) to catch messages that fail repeatedly and stop the infinite loop.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 DEAD LETTER QUEUE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Dead Letter Queue &mdash; <span class="hl">Safety Net</span></h2>
+    <p class="sub">Stop infinite retry loops. Capture failed messages for investigation.</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card rb">
+        <div class="ct">Why DLQ?</div>
+        <p>Without DLQ, poison messages retry forever, wasting compute and blocking progress. DLQ breaks the cycle.</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">How It Works</div>
+        <p>After N failed delivery attempts, Pub/Sub automatically moves the message to a designated dead-letter topic.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">What You Do With DLQ</div>
+        <p>Debug the failure. Fix the data or code. Replay corrected messages back to the original topic.</p>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Message Fails Repeatedly</div><p class="fd">Subscriber NACKs or times out on the same message multiple times</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Max Attempts Reached</div><p class="fd">After the configured max delivery attempts (e.g., 5), Pub/Sub stops retrying</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Moved to DLQ</div><p class="fd">Message is published to the dead-letter topic for manual inspection</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">4</div>
+        <div><div class="ft">Alert and Investigate</div><p class="fd">Set up monitoring on the DLQ. Investigate, fix, and replay as needed.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 14 DLQ COMMANDS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>DLQ <span class="hl">Commands</span></h2>
+    <p class="sub">Setting up a Dead Letter Queue with gcloud CLI</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 1: Create the Dead Letter Topic</div>
+      <pre><span class="cmd">gcloud</span> pubsub topics create <span class="str">upi-transaction-dead-letter</span></pre>
+    </div>
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 2: Create a Subscription on the Dead Letter Topic (for monitoring)</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">dead-letter-monitor-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-dead-letter</pre>
+    </div>
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Step 3: Create Subscription with DLQ Configured</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">notification-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--dead-letter-topic</span>=upi-transaction-dead-letter \
+  <span class="flag">--max-delivery-attempts</span>=5 \
+  <span class="flag">--ack-deadline</span>=30</pre>
+    </div>
+    <div class="callout green">
+      <strong>After 5 failed delivery attempts, the message is automatically forwarded to the dead-letter topic</strong> instead of being retried forever.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 15 DLQ FLOW DIAGRAM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>DLQ <span class="hl">Flow Diagram</span></h2>
+    <p class="sub">End-to-end message lifecycle with Dead Letter Queue</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Publisher sends message</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode public">Topic: upi-transaction-completed</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Subscription: notification-sub</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--blue);background:var(--bg-soft);">Subscriber receives and processes</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--green);background:#f0fff0;">ACK? YES &rarr; Done. Message removed.</div>
+    </div>
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode" style="border-color:var(--orange);background:#fff8f0;">ACK? NO &rarr; Retry (up to max-delivery-attempts)</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Max attempts reached &rarr; Forward to Dead Letter Topic</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">DLQ: upi-transaction-dead-letter</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Alert &rarr; Investigate &rarr; Fix &rarr; Replay</div>
+    </div>
+    <div class="callout">
+      <strong>Every production Pub/Sub subscription should have a DLQ configured.</strong> Without it, poison messages create silent infinite loops.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 16 MESSAGE ORDERING ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Message <span class="hl">Ordering</span></h2>
+    <p class="sub">Default: no ordering guarantee. Ordering requires explicit configuration.</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Default: No Ordering</div>
+        <div class="compare-body">
+          <p>Messages may arrive in any order. Sent: A, B, C. Received: B, A, C.</p>
+          <p style="margin-top:8px;">Fine for independent events like notifications or analytics.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">With Ordering Keys</div>
+        <div class="compare-body">
+          <p>Messages with the same ordering key are delivered in order. Different keys are processed in parallel.</p>
+          <p style="margin-top:8px;">Required for: Transfer &rarr; Refund sequences on the same account.</p>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:20px;">
+      <div class="lang">Enable Ordering on Subscription</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">ordered-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--enable-message-ordering</span></pre>
+    </div>
+    <div class="code-block" style="margin-bottom:20px;">
+      <div class="lang">Publish with Ordering Key</div>
+      <pre><span class="cmd">gcloud</span> pubsub topics publish <span class="str">upi-transaction-completed</span> \
+  <span class="flag">--message</span>='{"orderId":"123","amount":5000}' \
+  <span class="flag">--ordering-key</span>=user-A-vpa</pre>
+    </div>
+    <div class="callout orange">
+      <strong>Warning:</strong> Ordering reduces parallelism. Messages with the same ordering key are processed sequentially. Only use ordering when sequence truly matters.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 17 MESSAGE ATTRIBUTES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Message Attributes <span class="hl">(Metadata)</span></h2>
+    <p class="sub">Every message = Data (payload) + Attributes (key-value metadata)</p>
+  </div>
+  <div class="slide-body">
+    <div class="code-block" style="margin-bottom:24px;">
+      <div class="lang">Publish with Attributes</div>
+      <pre><span class="cmd">gcloud</span> pubsub topics publish <span class="str">upi-transaction-completed</span> \
+  <span class="flag">--message</span>='{"orderId":"123","amount":5000,"senderVpa":"user-A@upi"}' \
+  <span class="flag">--attribute</span>=eventType=TRANSFER,priority=HIGH,region=south</pre>
+    </div>
+    <div class="cards c3" style="margin-bottom:24px;">
+      <div class="card bb">
+        <div class="ct">Filtering</div>
+        <p>Subscriptions can filter messages by attributes without parsing the payload. Process only what you need.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Routing Logic</div>
+        <p>Route messages to different handlers based on <code>eventType</code> or <code>region</code> without deserializing.</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">Event Typing</div>
+        <p>Use attributes to indicate message schema version or event type for backward compatibility.</p>
+      </div>
+    </div>
+    <div class="code-block">
+      <div class="lang">Create Subscription with Filter</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">high-priority-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--message-filter</span>='attributes.priority = "HIGH"'</pre>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 18 PUSH SUBSCRIPTION SECURITY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Push Subscription <span class="hl">Security</span></h2>
+    <p class="sub">Anyone can hit your endpoint unless you authenticate push requests</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Problem: Unauthenticated Push</div>
+        <div class="compare-body">
+          <p>Your push endpoint is public. Anyone who discovers the URL can send fake messages to your service, triggering unauthorized actions.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Solution: Authenticated Push</div>
+        <div class="compare-body">
+          <p>Configure a Service Account for push delivery. Pub/Sub includes a signed JWT token in each request. Your service verifies the token before processing.</p>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:20px;">
+      <div class="lang">Create Authenticated Push Subscription</div>
+      <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">secure-push-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--push-endpoint</span>=https://notification-service.a.run.app/pubsub/receive \
+  <span class="flag">--push-auth-service-account</span>=pubsub-invoker@ford-upi-project.iam.gserviceaccount.com</pre>
+    </div>
+    <div class="callout orange">
+      <strong>Required for Cloud Run:</strong> Cloud Run services reject unauthenticated requests by default. You must configure push authentication with a service account that has the <code>roles/run.invoker</code> role.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 19 END-TO-END PRODUCTION FLOW ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>End-to-End <span class="hl">Production Flow</span></h2>
+    <p class="sub">Complete message lifecycle in a production Pub/Sub system</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:16px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">UPI Transfer Service (Publisher)</div>
+      <div class="adown">&#8595; publish event</div>
+      <div class="anode public">Topic: upi-transaction-completed</div>
+      <div class="adown">&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8595;</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:16px;">
+      <div class="card bb">
+        <div class="ct">Notification Sub (Push)</div>
+        <p>Cloud Run service. ACK via HTTP 200. DLQ after 5 failures.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Fraud Detection Sub (Pull)</div>
+        <p>GKE worker. Manual ACK. Idempotent processing with DB check.</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">Analytics Sub (Pull)</div>
+        <p>Batch consumer. Pulls in bulk. Writes to BigQuery. DLQ configured.</p>
+      </div>
+    </div>
+    <div class="arch-flow">
+      <div class="anode" style="border-color:var(--red);background:#fff0f0;">Dead Letter Topic: upi-transaction-dead-letter</div>
+      <div class="adown">&#8595;</div>
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Monitor &rarr; Alert &rarr; Investigate &rarr; Replay</div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 20 COMMON MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Common <span class="hl" style="color:var(--red)">Mistakes</span></h2>
+    <p class="sub">Pitfalls that cause production incidents in Pub/Sub systems</p>
+  </div>
+  <div class="slide-body">
+    <div class="scenario-box" style="margin-bottom:24px;">
+      <h3>Mistakes That Will Hurt You in Production</h3>
+      <div class="features">
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">1</div>
+          <div><div class="ft">Not Handling Duplicate Messages</div><p class="fd">At-least-once delivery means duplicates are guaranteed. Without idempotency, you get double charges, duplicate notifications, and corrupted data.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">2</div>
+          <div><div class="ft">Ignoring ACK Deadlines</div><p class="fd">Default is 10 seconds. If processing takes longer, messages are redelivered even though your code is working correctly. Silent duplicates.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">3</div>
+          <div><div class="ft">No Dead Letter Queue Configured</div><p class="fd">Without DLQ, a single poison message retries forever, consuming resources and potentially blocking ordered message processing.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">4</div>
+          <div><div class="ft">Using Push Without Authentication</div><p class="fd">Unauthenticated push endpoints can be exploited. Anyone who discovers the URL can inject fake messages into your system.</p></div>
+        </div>
+        <div class="feat">
+          <div class="num" style="background:var(--red);color:#fff;">5</div>
+          <div><div class="ft">Assuming Message Ordering</div><p class="fd">Pub/Sub does NOT guarantee order by default. If your logic depends on sequence, you must explicitly enable ordering keys.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 21 KEY TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you must remember from Level 2</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Pull = consumer-driven, Push = service-driven</strong> &mdash; choose based on your architecture and scaling model</li>
+      <li><strong>ACK controls the entire message lifecycle</strong> &mdash; no ACK means redelivery, always</li>
+      <li><strong>Redelivery is expected behavior, not a bug</strong> &mdash; at-least-once delivery is by design</li>
+      <li><strong>Idempotency is mandatory</strong> &mdash; every subscriber must handle duplicate messages safely</li>
+      <li><strong>ACK deadline is a silent trap</strong> &mdash; slow processing causes duplicates even when code is correct</li>
+      <li><strong>Dead Letter Queue prevents infinite retry loops</strong> &mdash; configure DLQ on every production subscription</li>
+      <li><strong>Message ordering requires explicit configuration</strong> &mdash; use ordering keys only when sequence matters</li>
+      <li><strong>Attributes enable event-driven filtering and routing</strong> &mdash; use metadata to avoid parsing payloads</li>
+      <li><strong>Authenticate push endpoints</strong> &mdash; unauthenticated push is a security risk in production</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 22 END ─── -->
+<div class="slide slide--end">
+  <h2>Level 2 Complete</h2>
+  <p>Core Mechanics Mastered</p>
+  <p style="font-size:1.05rem;opacity:0.5;">Next: Kafka vs Pub/Sub Deep Comparison + Spring Boot Integration</p>
+  <div class="next-box">Level 3 &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

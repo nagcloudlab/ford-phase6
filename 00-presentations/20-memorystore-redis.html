@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCP Memorystore &amp; Redis — In-Memory Caching</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+<div class="deck">
+
+  <!-- ============ SLIDE 1 — HERO ============ -->
+  <section class="slide slide--hero active">
+    <div class="badge">GCP Masterclass</div>
+    <h1>Memorystore &amp; Redis</h1>
+    <p class="tagline">In-Memory Caching &amp; Rate Limiting for UPI</p>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 2 — The Problem ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>The <span class="hl">Problem</span></h2>
+      <p class="sub">Why do we need an in-memory store?</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c2">
+        <div class="card rb">
+          <span class="icon">&#9203;</span>
+          <div class="ct">Slow Repeated Queries</div>
+          <p>Every <code>GET /api/balance/nag@upi</code> hits the database — even if balance hasn't changed</p>
+        </div>
+        <div class="card rb">
+          <span class="icon">&#128680;</span>
+          <div class="ct">No Rate Limiting</div>
+          <p>A user can fire 1000 transfers/sec — no throttle, no protection against abuse</p>
+        </div>
+        <div class="card bb">
+          <span class="icon">&#128202;</span>
+          <div class="ct">Database Under Load</div>
+          <p>As users grow, DB connections become the bottleneck — reads are 90% of traffic</p>
+        </div>
+        <div class="card bb">
+          <span class="icon">&#128176;</span>
+          <div class="ct">Cost</div>
+          <p>Cloud SQL charges per connection-second — unnecessary reads waste money</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 20px;">
+        <strong>Key Insight:</strong> Most balance lookups return the same data. Cache it in memory &rarr; sub-millisecond response, zero DB load.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 3 — What is Redis? ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>What is <span class="hl">Redis</span>?</h2>
+      <p class="sub">The world's most popular in-memory data store</p>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Key-Value Store</div>
+            <p class="fd">Simple: <code>SET key value</code>, <code>GET key</code>. Strings, hashes, lists, sets, sorted sets.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">In-Memory = Fast</div>
+            <p class="fd">All data lives in RAM. Reads in <strong>&lt; 1ms</strong>. Compare: database = 5-50ms.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">TTL (Time-To-Live)</div>
+            <p class="fd">Keys auto-expire. <code>SET balance:nag@upi 10000 EX 300</code> — gone after 5 minutes.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Atomic Operations</div>
+            <p class="fd"><code>INCR</code> is atomic — perfect for counters, rate limiters. No race conditions.</p>
+          </div>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top: 16px;">
+        Redis is not a database replacement — it's a <strong>speed layer</strong> that sits between your app and the database.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 4 — GCP Memorystore ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>GCP <span class="hl">Memorystore</span></h2>
+      <p class="sub">Fully managed Redis (and Memcached) on Google Cloud</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c3">
+        <div class="card centered bb">
+          <span class="icon">&#9889;</span>
+          <div class="ct">Fully Managed</div>
+          <p>No patching, no failover scripts, no config tuning. Google handles it all.</p>
+        </div>
+        <div class="card centered gb">
+          <span class="icon">&#128274;</span>
+          <div class="ct">VPC-Secured</div>
+          <p>Only accessible from your VPC. No public IP. Network-level isolation.</p>
+        </div>
+        <div class="card centered ob">
+          <span class="icon">&#128200;</span>
+          <div class="ct">99.9% SLA</div>
+          <p>Standard tier: automatic failover with replica. Sub-second recovery.</p>
+        </div>
+      </div>
+      <table style="margin-top: 20px;">
+        <thead>
+          <tr><th>Feature</th><th>Basic Tier</th><th>Standard Tier</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Replication</strong></td><td>None</td><td>1 replica (auto-failover)</td></tr>
+          <tr><td><strong>Size</strong></td><td>1 GB — 300 GB</td><td>1 GB — 300 GB</td></tr>
+          <tr><td><strong>SLA</strong></td><td>None</td><td>99.9%</td></tr>
+          <tr><td><strong>Use Case</strong></td><td>Dev/test, caching</td><td>Production workloads</td></tr>
+          <tr><td><strong>Price (1GB)</strong></td><td>~$0.016/hr</td><td>~$0.032/hr</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 5 — Architecture ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2><span class="hl">Architecture</span>: Cache-Aside Pattern</h2>
+      <p class="sub">How our UPI service uses Redis</p>
+    </div>
+    <div class="slide-body">
+      <div class="split r60-40">
+        <div class="split-left">
+          <div class="arch-flow">
+            <div class="anode public">Client: GET /api/balance/nag@upi</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode">TransferController</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode private" style="border-color: #d93025; background: #fce8e6; color: #b31412;">AccountCacheService — Check Redis</div>
+            <div class="adown">&#8595; cache miss</div>
+            <div class="anode">AccountRepository — Query H2/Cloud SQL</div>
+            <div class="adown">&#8595; store in cache</div>
+            <div class="anode private" style="border-color: #d93025; background: #fce8e6; color: #b31412;">Redis: SET account:nag@upi (TTL 5min)</div>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="card gb" style="margin-bottom: 12px;">
+            <div class="ct">Cache Hit</div>
+            <p>Return from Redis instantly<br><strong>&lt; 1ms</strong> response</p>
+          </div>
+          <div class="card rb" style="margin-bottom: 12px;">
+            <div class="ct">Cache Miss</div>
+            <p>Query DB, store result in Redis, return to client</p>
+          </div>
+          <div class="card ob">
+            <div class="ct">Cache Eviction</div>
+            <p>On transfer: evict both sender + receiver cache entries</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 6 — Rate Limiting ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2><span class="hl">Rate Limiting</span> with Redis</h2>
+      <p class="sub">Protect your service from abuse using atomic counters</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="code-block">
+            <span class="lang">Redis Commands</span>
+            <pre><span class="comment"># First transfer in window</span>
+<span class="cmd">INCR</span> <span class="str">ratelimit:transfer:nag@upi</span>   <span class="comment">→ 1</span>
+<span class="cmd">EXPIRE</span> <span class="str">ratelimit:transfer:nag@upi</span> <span class="flag">60</span>
+
+<span class="comment"># Subsequent transfers</span>
+<span class="cmd">INCR</span> <span class="str">ratelimit:transfer:nag@upi</span>   <span class="comment">→ 2</span>
+<span class="cmd">INCR</span> <span class="str">ratelimit:transfer:nag@upi</span>   <span class="comment">→ 3</span>
+...
+<span class="cmd">INCR</span> <span class="str">ratelimit:transfer:nag@upi</span>   <span class="comment">→ 11</span>
+<span class="comment"># ❌ BLOCKED — count > 10</span>
+
+<span class="comment"># After 60s, key expires → resets to 0</span></pre>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="features" style="grid-template-columns: 1fr;">
+            <div class="feat">
+              <div class="num" style="background: var(--green);">&#10003;</div>
+              <div>
+                <div class="ft">Atomic INCR</div>
+                <p class="fd">No race condition — even with 100 concurrent requests, count is exact</p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num" style="background: var(--orange);">!</div>
+              <div>
+                <div class="ft">Fail Open</div>
+                <p class="fd">If Redis is down, allow transfers. Don't block payments because cache is unavailable.</p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num" style="background: var(--blue);">&#8634;</div>
+              <div>
+                <div class="ft">Auto Reset</div>
+                <p class="fd">TTL = 60s. Key expires naturally. No cleanup jobs needed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 7 — Code Walkthrough ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Code <span class="hl">Walkthrough</span></h2>
+      <p class="sub">Key files in upi-transfer-service-redis</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>File</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>RedisConfig.java</strong></td><td>Configures <code>RedisTemplate</code> with JSON serialization</td></tr>
+          <tr><td><strong>AccountCacheService.java</strong></td><td>Cache-aside logic: <code>getFromCache()</code>, <code>putInCache()</code>, <code>evictFromCache()</code></td></tr>
+          <tr><td><strong>RateLimiterService.java</strong></td><td>INCR + EXPIRE pattern: <code>isAllowed()</code>, <code>getRemainingTransfers()</code></td></tr>
+          <tr><td><strong>TransferService.java</strong></td><td>Calls rate limiter before transfer, evicts cache after balance change</td></tr>
+          <tr><td><strong>TransferController.java</strong></td><td>New endpoints: <code>GET /api/rate-limit/{upiId}</code>, <code>DELETE /api/cache/{upiId}</code></td></tr>
+          <tr><td><strong>application.yml</strong></td><td>Redis connection: <code>spring.data.redis.host/port</code></td></tr>
+          <tr><td><strong>application-memorystore.yml</strong></td><td>GCP Memorystore profile with <code>MEMORYSTORE_HOST</code> env var</td></tr>
+          <tr><td><strong>docker-compose.yml</strong></td><td>Redis 7 + UPI service — one command to run locally</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 8 — Cache Strategies ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Caching <span class="hl">Strategies</span></h2>
+      <p class="sub">Choose the right pattern for your use case</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c2">
+        <div class="card bb">
+          <span class="icon">&#128270;</span>
+          <div class="ct">Cache-Aside (Lazy)</div>
+          <p><strong>We use this.</strong> App checks cache first. On miss, reads DB and populates cache. Simple, flexible.</p>
+        </div>
+        <div class="card gb">
+          <span class="icon">&#9997;</span>
+          <div class="ct">Write-Through</div>
+          <p>Every DB write also writes to cache. Always fresh, but adds write latency.</p>
+        </div>
+        <div class="card ob">
+          <span class="icon">&#128337;</span>
+          <div class="ct">Write-Behind</div>
+          <p>Write to cache first, async flush to DB. Fastest writes, risk of data loss.</p>
+        </div>
+        <div class="card rb">
+          <span class="icon">&#128465;</span>
+          <div class="ct">Cache Invalidation</div>
+          <p><strong>We also do this.</strong> On transfer, evict sender + receiver cache. Next read repopulates.</p>
+        </div>
+      </div>
+      <div class="callout orange" style="margin-top: 16px;">
+        <strong>The Two Hard Problems:</strong> Cache invalidation and naming things. We handle invalidation by evicting on write — simple and correct.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 9 — Memorystore vs Self-Managed ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Memorystore vs <span class="hl">Self-Managed</span> Redis</h2>
+      <p class="sub">Why pay for managed when you can run your own?</p>
+    </div>
+    <div class="slide-body">
+      <div class="compare">
+        <div class="compare-box bad">
+          <div class="compare-head">Self-Managed Redis on GCE</div>
+          <div class="compare-body">
+            <p><strong>You manage:</strong> Installation, config tuning, persistence, replication, failover, monitoring, patching, backups, scaling</p>
+            <p style="margin-top: 10px;"><strong>Risk:</strong> Data loss on VM crash (no persistence by default), split-brain on bad failover, security misconfig</p>
+            <p style="margin-top: 10px;"><strong>When:</strong> Custom Redis modules, cost optimization at massive scale</p>
+          </div>
+        </div>
+        <div class="compare-box good">
+          <div class="compare-head">GCP Memorystore</div>
+          <div class="compare-body">
+            <p><strong>Google manages:</strong> All of the above. You just connect and use it.</p>
+            <p style="margin-top: 10px;"><strong>Bonus:</strong> Automatic failover (Standard tier), IAM integration, Cloud Monitoring metrics, zero-downtime scaling</p>
+            <p style="margin-top: 10px;"><strong>When:</strong> Production workloads, team without Redis expertise</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 10 — Redis Data Types ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Redis <span class="hl">Data Types</span> Cheat Sheet</h2>
+      <p class="sub">More than just key-value</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Example</th><th>UPI Use Case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>String</strong></td><td><code>SET balance:nag 10000</code></td><td>Account balance cache</td></tr>
+          <tr><td><strong>Hash</strong></td><td><code>HSET account:nag name "Nag" bal 10000</code></td><td>Store full account as fields</td></tr>
+          <tr><td><strong>List</strong></td><td><code>LPUSH txn:nag "txn-123"</code></td><td>Recent transaction IDs</td></tr>
+          <tr><td><strong>Set</strong></td><td><code>SADD active-users "nag@upi"</code></td><td>Track active users</td></tr>
+          <tr><td><strong>Sorted Set</strong></td><td><code>ZADD leaderboard 50000 "nag"</code></td><td>Top senders by volume</td></tr>
+          <tr><td><strong>Counter</strong></td><td><code>INCR ratelimit:nag</code></td><td>Rate limiting (our approach)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top: 12px;">
+        We use <strong>Strings</strong> for account caching (JSON-serialized) and <strong>Counters</strong> (INCR) for rate limiting.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 11 — Production Considerations ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Production <span class="hl">Considerations</span></h2>
+      <p class="sub">Things to think about before going live</p>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Eviction Policy</div>
+            <p class="fd"><code>allkeys-lru</code>: when memory is full, evict least recently used keys. Best for caching.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">TTL Strategy</div>
+            <p class="fd">Too short = too many cache misses. Too long = stale data. We use 5 min + evict on write.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Fail Open</div>
+            <p class="fd">If Redis is down, the app still works — just slower. Never block business logic on cache.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Stampede Protection</div>
+            <p class="fd">When a popular key expires, 1000 requests hit DB simultaneously. Solutions: lock, jitter TTL.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">5</div>
+          <div>
+            <div class="ft">Monitoring</div>
+            <p class="fd">Track hit rate, memory usage, evictions, latency. Memorystore integrates with Cloud Monitoring.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">6</div>
+          <div>
+            <div class="ft">Serialization</div>
+            <p class="fd">JSON is readable but larger. Binary (Protobuf/Kryo) is faster. We use JSON for clarity.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 12 — Deploying on GCP ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Deploying on <span class="hl">GCP</span></h2>
+      <p class="sub">Cloud Run + VPC Connector + Memorystore</p>
+    </div>
+    <div class="slide-body">
+      <div class="split r60-40">
+        <div class="split-left">
+          <div class="code-block">
+            <span class="lang">bash</span>
+            <pre><span class="comment"># 1. Create Memorystore instance</span>
+<span class="cmd">gcloud</span> redis instances create <span class="str">upi-cache</span> \
+  <span class="flag">--size</span>=1 <span class="flag">--region</span>=us-central1 \
+  <span class="flag">--redis-version</span>=redis_7_0 <span class="flag">--tier</span>=BASIC
+
+<span class="comment"># 2. Create VPC Connector (bridge for Cloud Run)</span>
+<span class="cmd">gcloud</span> compute networks vpc-access connectors \
+  create <span class="str">upi-connector</span> \
+  <span class="flag">--region</span>=us-central1 <span class="flag">--range</span>=10.8.0.0/28
+
+<span class="comment"># 3. Get Redis IP</span>
+<span class="cmd">export</span> REDIS_HOST=$(<span class="cmd">gcloud</span> redis instances \
+  describe upi-cache <span class="flag">--region</span>=us-central1 \
+  <span class="flag">--format</span>=<span class="str">"value(host)"</span>)
+
+<span class="comment"># 4. Deploy to Cloud Run with VPC Connector</span>
+<span class="cmd">gcloud</span> run deploy <span class="str">upi-service-redis</span> \
+  <span class="flag">--image</span>=gcr.io/$PROJECT_ID/upi-service-redis \
+  <span class="flag">--vpc-connector</span>=upi-connector \
+  <span class="flag">--set-env-vars</span>=<span class="str">"REDIS_HOST=$REDIS_HOST"</span></pre>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="arch-flow">
+            <div class="anode public">Internet (client)</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode" style="border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark);">Cloud Run</div>
+            <div class="adown">&#8595; VPC Connector</div>
+            <div class="anode private" style="border-color: var(--red); background: var(--red-light); color: var(--red-dark);">Memorystore (private IP)</div>
+          </div>
+          <div class="callout orange" style="margin-top: 12px; font-size: 1.1rem;">
+            Memorystore has <strong>no public IP</strong>. VPC Connector is the bridge.
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 13 — Memorystore Monitoring ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Memorystore <span class="hl">Monitoring</span></h2>
+      <p class="sub">What to watch in production</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c3">
+        <div class="card centered gb">
+          <div class="stat-num">95%+</div>
+          <div class="ct">Cache Hit Ratio</div>
+          <p>Target hit rate. Below 80% means TTL is too short or keys are evicted too fast.</p>
+        </div>
+        <div class="card centered bb">
+          <div class="stat-num">&lt; 1ms</div>
+          <div class="ct">Latency</div>
+          <p>Redis p99 latency. If it spikes, check memory pressure or network issues.</p>
+        </div>
+        <div class="card centered ob">
+          <div class="stat-num">0</div>
+          <div class="ct">Evictions</div>
+          <p>Keys evicted due to memory full. If non-zero, increase instance size or reduce TTL.</p>
+        </div>
+      </div>
+      <div class="features" style="margin-top: 16px;">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Cloud Console</div>
+            <p class="fd">Memorystore &rarr; Redis &rarr; upi-cache &rarr; Monitoring tab. Memory, clients, commands/sec.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">Redis CLI</div>
+            <p class="fd"><code>redis-cli -h &lt;ip&gt; INFO stats</code> — keyspace hits/misses, commands processed.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Cloud Run Logs</div>
+            <p class="fd">Our app logs CACHE HIT/MISS/EVICT — visible in Cloud Logging. Filter by severity.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Alerts</div>
+            <p class="fd">Set alerts on memory usage &gt; 80%, hit ratio &lt; 80%, or connected clients spike.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 14 — Key Takeaways ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Key <span class="hl">Takeaways</span></h2>
+    </div>
+    <div class="slide-body">
+      <ul class="takeaways">
+        <li><strong>Memorystore</strong> = GCP's managed Redis. No ops, VPC-secured, auto-failover (Standard tier).</li>
+        <li><strong>VPC Connector</strong> bridges Cloud Run into VPC so it can reach Memorystore's private IP.</li>
+        <li><strong>Cache-Aside</strong> pattern: check cache &rarr; miss &rarr; read DB &rarr; populate cache. Evict on write.</li>
+        <li><strong>Rate Limiting</strong> via INCR + EXPIRE: atomic, no race conditions, auto-resets after window.</li>
+        <li><strong>Fail Open</strong>: if Memorystore is down, app degrades gracefully — just hits the database.</li>
+        <li><strong>Monitor</strong>: hit ratio, latency, evictions, memory usage in Cloud Console.</li>
+      </ul>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 15 — END ============ -->
+  <section class="slide slide--end">
+    <h2>Lab Time!</h2>
+    <p>Provision Memorystore, deploy to Cloud Run with VPC Connector</p>
+    <p>Test caching &amp; rate limiting on GCP</p>
+    <div class="next-box">Next Up &rarr; BigQuery Analytics</div>
+    <span class="snum"></span>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<button class="nav-btn prev" id="btnPrev" aria-label="Previous">&larr;</button>
+<button class="nav-btn next" id="btnNext" aria-label="Next">&rarr;</button>
+<div class="progress" id="progress"></div>
+<div class="hint" id="hint">Use arrow keys or swipe to navigate &middot; Press F for fullscreen</div>
+
+<script src="slides.js"></script>
+</body>
+</html>

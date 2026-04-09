@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pub/Sub Level 1 — Foundations and Mental Model</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<button class="nav-btn prev" id="btnPrev">&#8592;</button>
+<button class="nav-btn next" id="btnNext">&#8594;</button>
+<div class="hint" id="hint">&#8592; &#8594; arrow keys &middot; swipe &middot; press <b>F</b> for fullscreen</div>
+
+<div class="deck">
+
+<!-- ─── 1 HERO ─── -->
+<div class="slide slide--hero active">
+  <div class="badge">GCP Masterclass &middot; Pub/Sub Deep Dive</div>
+  <h1>GCP Pub/Sub &mdash; Level 1</h1>
+  <p class="tagline">Foundations and Mental Model</p>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 2 THE PROBLEM ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Problem &mdash; <span class="hl" style="color:var(--red)">Synchronous Call Chains</span></h2>
+    <p class="sub">What happens when every service talks directly to every other service</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:28px;">
+      <div class="step">Service A</div>
+      <div class="arr">&rarr; REST &rarr;</div>
+      <div class="step">Service B</div>
+      <div class="arr">&rarr; REST &rarr;</div>
+      <div class="step">Service C</div>
+    </div>
+    <div class="cards c2" style="margin-bottom:20px;">
+      <div class="card rb">
+        <div class="ct">Tight Coupling</div>
+        <p>Every service must know the address and API contract of every service it calls. Changes ripple everywhere.</p>
+      </div>
+      <div class="card rb">
+        <div class="ct">Cascading Failures</div>
+        <p>If Service C goes down, Service B fails, which causes Service A to fail. One outage takes down the entire chain.</p>
+      </div>
+      <div class="card rb">
+        <div class="ct">Slow Response Chains</div>
+        <p>Total latency = sum of all downstream calls. Users wait for the slowest service in the chain.</p>
+      </div>
+      <div class="card rb">
+        <div class="ct">Hard to Scale</div>
+        <p>All services must scale together. Adding a new consumer requires redeploying the producer.</p>
+      </div>
+    </div>
+    <div class="callout red">
+      <strong>Synchronous REST chains create fragile systems that break under real-world conditions.</strong>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 3 EVENT-DRIVEN SHIFT ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Shift &mdash; <span class="hl">Event-Driven Architecture</span></h2>
+    <p class="sub">From direct calls to decoupled events</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Before: Direct REST Calls</div>
+        <div class="compare-body">
+          <div class="arch-flow">
+            <div class="anode danger">Service A</div>
+            <div class="adown">&darr; REST</div>
+            <div class="anode danger">Service B</div>
+            <div class="adown">&darr; REST</div>
+            <div class="anode danger">Service C</div>
+          </div>
+          <p style="margin-top:12px;">Producer knows every consumer. Tightly coupled. Fragile.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">After: Event-Driven via Pub/Sub</div>
+        <div class="compare-body">
+          <div class="arch-flow">
+            <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Service A (Publisher)</div>
+            <div class="adown">&darr; Event</div>
+            <div class="anode public">Pub/Sub Topic</div>
+            <div class="adown">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</div>
+          </div>
+          <p style="margin-top:12px;">Producer does not know who consumes. Consumers scale independently.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Key insight:</strong> The publisher fires and forgets. Subscribers are added or removed without touching the publisher.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 4 WHAT IS PUB/SUB ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>What is <span class="hl">Google Cloud Pub/Sub?</span></h2>
+    <p class="sub">A fully managed, serverless messaging service for event-driven systems</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Property</th><th>What It Means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Async Communication</strong></td><td>Publishers and subscribers operate independently, at their own pace</td></tr>
+        <tr><td><strong>Event-Driven Systems</strong></td><td>Services react to events instead of polling or making synchronous calls</td></tr>
+        <tr><td><strong>Real-Time Pipelines</strong></td><td>Messages delivered in milliseconds &mdash; suitable for streaming and analytics</td></tr>
+        <tr><td><strong>Fully Managed</strong></td><td>No brokers to provision, no clusters to maintain, no ZooKeeper</td></tr>
+        <tr><td><strong>Serverless</strong></td><td>Scales automatically from zero to millions of messages per second</td></tr>
+      </tbody>
+    </table>
+    <div class="callout green">
+      <strong>If you know Kafka:</strong> Pub/Sub is Google's managed alternative. No partitions to tune, no brokers to manage, no rebalancing headaches.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 5 CORE CONCEPT: TOPIC ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Core Concept 1 &mdash; <span class="hl">Topic</span></h2>
+    <p class="sub">The central broadcast channel for messages</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:24px;">
+      <div class="card bb">
+        <div class="ct">What Is a Topic?</div>
+        <p>A <strong>named resource</strong> where publishers send messages. Think of it as a broadcast channel &mdash; anyone can tune in by creating a subscription.</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Mental Model</div>
+        <p>A topic is like a <strong>radio station</strong>. The station broadcasts regardless of how many listeners exist. Zero listeners? Still broadcasts. Ten listeners? All hear the same content.</p>
+      </div>
+    </div>
+    <div class="code-block" style="margin-bottom:16px;">
+      <div class="lang">naming convention</div>
+      <pre><span class="comment"># Topic names are project-scoped resources</span>
+projects/<span class="str">my-project</span>/topics/<span class="str">upi-transaction-completed</span>
+projects/<span class="str">my-project</span>/topics/<span class="str">order-placed</span>
+projects/<span class="str">my-project</span>/topics/<span class="str">user-signup</span></pre>
+    </div>
+    <div class="callout">
+      <strong>One topic per event type.</strong> Do not mix unrelated events into a single topic.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 6 CORE CONCEPT: PUBLISHER ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Core Concept 2 &mdash; <span class="hl">Publisher</span></h2>
+    <p class="sub">The service that sends messages to a topic</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:28px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">Publisher (Your Service)</div>
+      <div class="adown">&darr; publishes message</div>
+      <div class="anode public">Topic</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card gb">
+        <div class="ct">Payment Service</div>
+        <p>Publishes <code>payment.completed</code> after processing a payment</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Order Service</div>
+        <p>Publishes <code>order.placed</code> when a customer places an order</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">UPI Transfer Service</div>
+        <p>Publishes <code>transfer.completed</code> after a UPI transfer succeeds</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Publishers are fire-and-forget.</strong> They do not know (or care) who consumes the message.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 7 CORE CONCEPT: SUBSCRIPTION ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Core Concept 3 &mdash; <span class="hl">Subscription</span></h2>
+    <p class="sub">The bridge between a topic and its consumers</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:24px;">
+      <div class="anode public">Topic: transfer-completed</div>
+      <div class="adown">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card ob">
+        <div class="ct">notification-sub</div>
+        <p>Gets its own independent copy of every message published to the topic</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">analytics-sub</div>
+        <p>Gets its own independent copy of every message published to the topic</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">fraud-detection-sub</div>
+        <p>Gets its own independent copy of every message published to the topic</p>
+      </div>
+    </div>
+    <div class="callout orange">
+      <strong>Key rule:</strong> Each subscription receives a <strong>full copy</strong> of every message. Multiple subscriptions = fan-out pattern. This is how one event reaches many consumers.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 8 CORE CONCEPT: SUBSCRIBER ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Core Concept 4 &mdash; <span class="hl">Subscriber</span></h2>
+    <p class="sub">The service that reads and processes messages from a subscription</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:28px;">
+      <div class="anode public">Subscription</div>
+      <div class="adown">&darr; delivers message</div>
+      <div class="anode private">Subscriber (Your Service)</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:20px;">
+      <div class="card bb">
+        <div class="ct">Notification Service</div>
+        <p>Reads from <code>notification-sub</code>, sends SMS/email/push to the user</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Analytics Service</div>
+        <p>Reads from <code>analytics-sub</code>, stores transaction data in BigQuery</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Fraud Detection</div>
+        <p>Reads from <code>fraud-sub</code>, runs ML models to flag suspicious transfers</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Subscribers are independent.</strong> If the Notification Service is down, Analytics and Fraud Detection continue processing normally.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 9 VISUAL MENTAL MODEL ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>The Complete <span class="hl">Mental Model</span></h2>
+    <p class="sub">Publisher &rarr; Topic &rarr; Subscription &rarr; Subscriber (fan-out)</p>
+  </div>
+  <div class="slide-body">
+    <div class="arrow-flow" style="margin-bottom:28px;">
+      <div class="step">Publisher</div>
+      <div class="arr">&rarr;</div>
+      <div class="step grn">Topic</div>
+      <div class="arr">&rarr;</div>
+      <div class="step org">Subscription</div>
+      <div class="arr">&rarr;</div>
+      <div class="step">Subscriber</div>
+    </div>
+    <p style="text-align:center;margin-bottom:24px;"><strong>Fan-Out Pattern:</strong> One topic, multiple subscriptions, each with its own subscriber</p>
+    <div class="arch-flow" style="margin-bottom:20px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">UPI Transfer Service (Publisher)</div>
+      <div class="adown">&darr;</div>
+      <div class="anode public">Topic: transfer-completed</div>
+      <div class="adown">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</div>
+    </div>
+    <div class="cards c3">
+      <div class="card gb">
+        <div class="ct">notification-sub</div>
+        <p>Notification Service sends SMS to user</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">analytics-sub</div>
+        <p>Analytics Service writes to BigQuery</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">fraud-sub</div>
+        <p>Fraud Detection runs ML scoring</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 10 MESSAGE FLOW STEP BY STEP ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Message Flow &mdash; <span class="hl">Step by Step</span></h2>
+    <p class="sub">What happens from the moment a message is published</p>
+  </div>
+  <div class="slide-body">
+    <div class="features" style="margin-bottom:20px;">
+      <div class="feat">
+        <div class="num">1</div>
+        <div><div class="ft">Publish</div><p class="fd">Publisher sends a message (JSON payload + optional attributes) to a named Topic</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">2</div>
+        <div><div class="ft">Store</div><p class="fd">Pub/Sub durably stores the message and replicates it across zones for reliability</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">3</div>
+        <div><div class="ft">Deliver</div><p class="fd">Each Subscription receives its own copy of the message (pull or push delivery)</p></div>
+      </div>
+      <div class="feat">
+        <div class="num">4</div>
+        <div><div class="ft">Process and Acknowledge</div><p class="fd">Subscriber processes the message, then sends an ACK. Pub/Sub removes the message from that subscription.</p></div>
+      </div>
+    </div>
+    <div class="callout orange">
+      <strong>If no ACK is received</strong> within the acknowledgment deadline, Pub/Sub automatically redelivers the message. This is the at-least-once guarantee.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 11 KEY CHARACTERISTICS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Characteristics</span></h2>
+    <p class="sub">What makes Pub/Sub production-ready out of the box</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2" style="margin-bottom:20px;">
+      <div class="card bb">
+        <div class="ct">Fully Managed</div>
+        <p>No Kafka clusters to provision. No ZooKeeper. No broker rebalancing. Google handles all infrastructure.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Highly Scalable</div>
+        <p>Handles millions of messages per second. Scales automatically with no manual partition management.</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">At-Least-Once Delivery</div>
+        <p>Every message is guaranteed to be delivered at least once. Messages are not lost, but may be delivered more than once.</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Global Availability</div>
+        <p>Messages are replicated across zones. Multi-region by default. No single point of failure.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>For Kafka users:</strong> Pub/Sub trades partition-level control for zero operational overhead. You focus on business logic, not cluster health.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 12 IDEMPOTENCY ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Why <span class="hl">Idempotency</span> Matters</h2>
+    <p class="sub">At-least-once delivery means your consumer may see the same message twice</p>
+  </div>
+  <div class="slide-body">
+    <div class="compare" style="margin-bottom:24px;">
+      <div class="compare-box bad">
+        <div class="compare-head">Bad: No Duplicate Check</div>
+        <div class="compare-body">
+          <div class="code-block">
+            <div class="lang">java</div>
+            <pre><code>void handleEvent(TransactionEvent event) {
+    // Process every time -- DANGEROUS
+    notificationService.send(event);
+    analyticsService.record(event);
+    // Duplicate message = duplicate SMS,
+    // duplicate analytics entry
+}</code></pre>
+          </div>
+          <p style="margin-top:8px;">User gets two SMS messages. Analytics counts the same transfer twice.</p>
+        </div>
+      </div>
+      <div class="compare-box good">
+        <div class="compare-head">Good: Idempotent Consumer</div>
+        <div class="compare-body">
+          <div class="code-block">
+            <div class="lang">java</div>
+            <pre><code>void handleEvent(TransactionEvent event) {
+    if (alreadyProcessed(event.getId())) {
+        log.info("Duplicate, skipping");
+        return; // safe exit
+    }
+    notificationService.send(event);
+    analyticsService.record(event);
+    markProcessed(event.getId());
+}</code></pre>
+          </div>
+          <p style="margin-top:8px;">Duplicates are detected and skipped. Safe, reliable processing.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Rule of thumb:</strong> If processing the same message twice causes a problem, your consumer is not idempotent. Fix it before going to production.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 13 PUB/SUB VS TRADITIONAL QUEUE ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Pub/Sub vs <span class="hl">Traditional Message Queue</span></h2>
+    <p class="sub">Understanding the fundamental difference in messaging models</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:24px;">
+      <thead><tr><th>Aspect</th><th>Traditional Queue (RabbitMQ)</th><th>Pub/Sub Model (GCP Pub/Sub)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Model</strong></td><td>Point-to-point &mdash; one consumer gets each message</td><td>Fan-out &mdash; all subscriptions get every message</td></tr>
+        <tr><td><strong>Consumers</strong></td><td>Competing consumers on a single queue</td><td>Independent subscriptions, each with its own delivery</td></tr>
+        <tr><td><strong>Scaling</strong></td><td>Add more consumers to the same queue</td><td>Add more subscriptions for new use cases</td></tr>
+        <tr><td><strong>Use Case</strong></td><td>Work distribution (process once)</td><td>Event broadcast (react everywhere)</td></tr>
+        <tr><td><strong>Adding Consumers</strong></td><td>Connect to existing queue</td><td>Create a new subscription &mdash; no code change to publisher</td></tr>
+        <tr><td><strong>Infrastructure</strong></td><td>Self-managed brokers</td><td>Fully managed, serverless</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Kafka parallel:</strong> A Pub/Sub subscription is similar to a Kafka consumer group &mdash; each subscription independently tracks its own position in the message stream.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 14 REAL-WORLD USE CASES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Real-World <span class="hl">Use Cases</span></h2>
+    <p class="sub">Where Pub/Sub fits in production architectures</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c3">
+      <div class="card bb">
+        <div class="ct">E-Commerce: Order Placed</div>
+        <p style="margin-bottom:12px;">Customer places an order. A single event triggers multiple independent actions:</p>
+        <div class="arrow-flow" style="justify-content:flex-start;flex-wrap:wrap;">
+          <div class="step" style="font-size:0.9rem;padding:6px 14px;">order.placed</div>
+        </div>
+        <p style="margin-top:10px;font-size:1rem;">Payment processing, Inventory reservation, Shipping label generation &mdash; all triggered independently.</p>
+      </div>
+      <div class="card gb">
+        <div class="ct">Analytics: Click Stream</div>
+        <p style="margin-bottom:12px;">User interactions flow through Pub/Sub into analytics pipelines:</p>
+        <div class="arrow-flow" style="justify-content:flex-start;flex-wrap:wrap;">
+          <div class="step" style="font-size:0.9rem;padding:6px 14px;">user.click</div>
+        </div>
+        <p style="margin-top:10px;font-size:1rem;">Events streamed to BigQuery for dashboards, ML training, and A/B test analysis.</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">Microservices: Decoupling</div>
+        <p style="margin-bottom:12px;">Services communicate through events instead of direct API calls:</p>
+        <div class="arrow-flow" style="justify-content:flex-start;flex-wrap:wrap;">
+          <div class="step" style="font-size:0.9rem;padding:6px 14px;">service.event</div>
+        </div>
+        <p style="margin-top:10px;font-size:1rem;">Complete decoupling. Services can be deployed, scaled, and updated independently.</p>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 15 UPI REAL-TIME SCENARIO ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>UPI Transfer &mdash; <span class="hl">Real-Time Scenario</span></h2>
+    <p class="sub">How our UPI Transfer Service uses Pub/Sub in practice</p>
+  </div>
+  <div class="slide-body">
+    <div class="arch-flow" style="margin-bottom:8px;">
+      <div class="anode" style="border-color:var(--text-light);background:var(--bg-soft);">UPI Transfer Service</div>
+      <div class="adown">&darr; publishes "transfer.completed"</div>
+      <div class="anode public">Topic: upi-transaction-completed</div>
+      <div class="adown">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</div>
+    </div>
+    <div class="cards c3" style="margin-bottom:16px;">
+      <div class="card gb">
+        <div class="ct">Notification Service</div>
+        <p>Sends SMS/push to sender and receiver confirming the transfer</p>
+      </div>
+      <div class="card bb">
+        <div class="ct">Analytics Service</div>
+        <p>Records transaction volume, average amount, peak hours in BigQuery</p>
+      </div>
+      <div class="card ob">
+        <div class="ct">Fraud Detection</div>
+        <p>Scores each transfer in real time, flags suspicious patterns for review</p>
+      </div>
+    </div>
+    <div class="callout green">
+      <strong>Each service subscribes independently.</strong> Adding a fourth consumer (e.g., Rewards Service) requires zero changes to the Transfer Service.
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 16 HANDS-ON COMMANDS PREVIEW ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Hands-On &mdash; <span class="hl">Essential Commands</span></h2>
+    <p class="sub">The four gcloud commands you will use in every Pub/Sub workflow</p>
+  </div>
+  <div class="slide-body">
+    <div class="cards c2">
+      <div class="card bb">
+        <div class="ct">1. Create a Topic</div>
+        <div class="code-block" style="margin-top:8px;">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> pubsub topics create <span class="str">upi-transaction-completed</span></pre>
+        </div>
+      </div>
+      <div class="card gb">
+        <div class="ct">2. Create a Subscription</div>
+        <div class="code-block" style="margin-top:8px;">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> pubsub subscriptions create <span class="str">notification-sub</span> \
+  <span class="flag">--topic</span>=upi-transaction-completed \
+  <span class="flag">--ack-deadline</span>=30</pre>
+        </div>
+      </div>
+      <div class="card ob">
+        <div class="ct">3. Publish a Message</div>
+        <div class="code-block" style="margin-top:8px;">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> pubsub topics publish <span class="str">upi-transaction-completed</span> \
+  <span class="flag">--message</span>=<span class="str">'{"txnId":"T001","amount":500}'</span></pre>
+        </div>
+      </div>
+      <div class="card rb">
+        <div class="ct">4. Pull Messages</div>
+        <div class="code-block" style="margin-top:8px;">
+          <div class="lang">bash</div>
+          <pre><span class="cmd">gcloud</span> pubsub subscriptions pull <span class="str">notification-sub</span> \
+  <span class="flag">--auto-ack</span> \
+  <span class="flag">--limit</span>=5</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 17 COMMON MISTAKES ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Common <span class="hl" style="color:var(--red)">Mistakes</span></h2>
+    <p class="sub">Misconceptions that trip up beginners</p>
+  </div>
+  <div class="slide-body">
+    <div class="scenario-box">
+      <h3>Watch Out For These</h3>
+      <div class="scenario-item">
+        <div class="dot-red">&#10005;</div>
+        <div>
+          <strong>Thinking topics store messages forever</strong>
+          <span>Pub/Sub retains unacknowledged messages for a maximum of 7 days by default. It is not a database. If no subscription exists when a message is published, that message is lost.</span>
+        </div>
+      </div>
+      <div class="scenario-item">
+        <div class="dot-red">&#10005;</div>
+        <div>
+          <strong>Not handling duplicate messages</strong>
+          <span>At-least-once delivery means duplicates will happen. If your consumer is not idempotent, you will process the same event multiple times &mdash; leading to double charges, duplicate notifications, or corrupted analytics.</span>
+        </div>
+      </div>
+      <div class="scenario-item">
+        <div class="dot-red">&#10005;</div>
+        <div>
+          <strong>Confusing subscription with consumer</strong>
+          <span>A subscription is a Pub/Sub resource (like a Kafka consumer group). A consumer/subscriber is your application code that reads from the subscription. Multiple consumer instances can read from the same subscription for load balancing.</span>
+        </div>
+      </div>
+      <div class="scenario-item">
+        <div class="dot-red">&#10005;</div>
+        <div>
+          <strong>Publishing without any subscription</strong>
+          <span>If you publish to a topic with zero subscriptions, the messages are silently dropped. Always create subscriptions before publishing in production.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 18 KEY TAKEAWAYS ─── -->
+<div class="slide">
+  <div class="slide-header">
+    <h2>Key <span class="hl">Takeaways</span></h2>
+    <p class="sub">What you should remember from Level 1</p>
+  </div>
+  <div class="slide-body">
+    <ul class="takeaways">
+      <li><strong>Pub/Sub enables event-driven architecture</strong> &mdash; services communicate through events, not direct API calls</li>
+      <li><strong>Core entities: Topic, Subscription, Subscriber</strong> &mdash; publishers send to topics, subscriptions fan out, subscribers process</li>
+      <li><strong>Async and scalable communication</strong> &mdash; publishers fire and forget, subscribers process at their own pace</li>
+      <li><strong>At-least-once delivery guarantee</strong> &mdash; messages are never lost, but may arrive more than once</li>
+      <li><strong>Idempotent consumers are mandatory</strong> &mdash; always check for duplicates before processing</li>
+      <li><strong>Fully managed and serverless</strong> &mdash; no brokers, no partitions, no ZooKeeper. Focus on business logic.</li>
+    </ul>
+  </div>
+  <div class="snum"></div>
+</div>
+
+<!-- ─── 19 END ─── -->
+<div class="slide slide--end">
+  <h2>Level 1 Complete</h2>
+  <p>Foundations and Mental Model</p>
+  <p style="font-size:1.05rem;opacity:0.5;">You now understand why Pub/Sub exists, how the core entities work together, and the mental model for event-driven systems on GCP.</p>
+  <div class="next-box">Next: Level 2 &mdash; Pull vs Push, ACK, DLQ, Ordering &#8594;</div>
+  <div class="snum"></div>
+</div>
+
+</div><!-- /deck -->
+
+<script src="slides.js"></script>
+</body>
+</html>

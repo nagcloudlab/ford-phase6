@@ -1,0 +1,26 @@
+server:
+  port: ${PORT:8083}
+
+spring:
+  application:
+    name: analytics-service-bigquery
+  cloud:
+    gcp:
+      project-id: ${GCP_PROJECT_ID:test-project}
+      pubsub:
+        emulator-host: ${PUBSUB_EMULATOR_HOST:}
+
+# Pub/Sub subscription
+pubsub:
+  subscription: ${PUBSUB_SUBSCRIPTION:analytics-sub}
+
+# BigQuery config
+bigquery:
+  dataset: ${BQ_DATASET:upi_analytics}
+  table: ${BQ_TABLE:transactions}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

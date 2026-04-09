@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upi-transfer-service
+  namespace: upi-system
+  labels:
+    app: upi-transfer-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: upi-transfer-service
+  template:
+    metadata:
+      labels:
+        app: upi-transfer-service
+    spec:
+      containers:
+        - name: upi-transfer-service
+          image: REGION-docker.pkg.dev/PROJECT_ID/upi-repo/upi-transfer-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GCP_PROJECT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: upi-config
+                  key: GCP_PROJECT_ID
+            - name: SPRING_PROFILES_ACTIVE
+              value: "pubsub"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upi-transfer-service
+  namespace: upi-system
+  labels:
+    app: upi-transfer-service
+spec:
+  type: ClusterIP
+  selector:
+    app: upi-transfer-service
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP

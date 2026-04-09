@@ -8,26 +8,31 @@ import com.example.upi.model.Transaction;
 import com.example.upi.model.TransactionStatus;
 import com.example.upi.repository.AccountRepository;
 import com.example.upi.repository.TransactionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TransferService implements ITransferService {
 
+        private static final Logger log = LoggerFactory.getLogger(TransferService.class);
+
         private final AccountRepository accountRepository;
         private final TransactionRepository transactionRepository;
+        private final Optional<TransactionEventPublisher> eventPublisher;
 
-        private final TransactionEventPublisher eventPublisher;
-
-        // Update constructor to include eventPublisher
         public TransferService(AccountRepository accountRepository,
                         TransactionRepository transactionRepository,
-                        TransactionEventPublisher eventPublisher) {
+                        Optional<TransactionEventPublisher> eventPublisher) {
                 this.accountRepository = accountRepository;
                 this.transactionRepository = transactionRepository;
                 this.eventPublisher = eventPublisher;
+                log.info("TransferService initialized. Pub/Sub publisher: {}",
+                        eventPublisher.isPresent() ? "ENABLED" : "DISABLED");
         }
 
         @Transactional
@@ -73,14 +78,16 @@ public class TransferService implements ITransferService {
                                 request.getAmount(), TransactionStatus.SUCCESS, request.getRemark());
                 Transaction savedTransaction = transactionRepository.save(txn);
 
-                // Publish event after successful transfer // asynchronously
-                TransactionEvent event = new TransactionEvent(
-                                savedTransaction.getId(),
-                                request.getSenderUpiId(),
-                                request.getReceiverUpiId(),
-                                request.getAmount(),
-                                savedTransaction.getStatus().name());
-                eventPublisher.publishTransactionEvent(event); // GCP Pub/Sub
+                // Publish event after successful transfer (async, non-blocking)
+                eventPublisher.ifPresent(publisher -> {
+                        TransactionEvent event = new TransactionEvent(
+                                        savedTransaction.getId(),
+                                        request.getSenderUpiId(),
+                                        request.getReceiverUpiId(),
+                                        request.getAmount(),
+                                        savedTransaction.getStatus().name());
+                        publisher.publishTransactionEvent(event);
+                });
 
                 return new TransferResponse(txn.getId(), txn.getSenderUpiId(),
                                 txn.getReceiverUpiId(), txn.getAmount(),

@@ -1,0 +1,11 @@
+# Profile for GCP Memorystore (managed Redis)
+# Activate with: --spring.profiles.active=memorystore
+
+spring:
+  data:
+    redis:
+      host: ${MEMORYSTORE_HOST}
+      port: ${MEMORYSTORE_PORT:6379}
+      # Memorystore does not require a password by default (VPC-secured)
+      # If AUTH is enabled:
+      # password: ${MEMORYSTORE_AUTH_STRING}

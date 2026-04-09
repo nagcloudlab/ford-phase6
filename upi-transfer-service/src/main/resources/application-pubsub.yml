@@ -1,0 +1,17 @@
+spring:
+  cloud:
+    gcp:
+      project-id: ${GCP_PROJECT_ID:test-project}
+      pubsub:
+        emulator-host: ${PUBSUB_EMULATOR_HOST:}
+
+# Pub/Sub topic and subscription names
+pubsub:
+  topic: transaction-events
+  subscriptions:
+    notification: notification-sub
+    fraud-detection: fraud-detection-sub
+    analytics: analytics-sub
+  dlq:
+    topic: transaction-events-dlq
+    subscription: dlq-monitor-sub

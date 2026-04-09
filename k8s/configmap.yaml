@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upi-config
+  namespace: upi-system
+data:
+  GCP_PROJECT_ID: "REPLACE_WITH_PROJECT_ID"
+  PUBSUB_TOPIC: "transaction-events"
+  PUBSUB_SUBSCRIPTION_NOTIFICATION: "notification-sub"
+  PUBSUB_SUBSCRIPTION_FRAUD: "fraud-detection-sub"
+  PUBSUB_SUBSCRIPTION_ANALYTICS: "analytics-sub"

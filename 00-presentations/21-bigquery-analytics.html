@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BigQuery — Streaming Analytics for UPI</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+<div class="deck">
+
+  <!-- ============ SLIDE 1 — HERO ============ -->
+  <section class="slide slide--hero active">
+    <div class="badge">GCP Masterclass</div>
+    <h1>BigQuery</h1>
+    <p class="tagline">Streaming Analytics for UPI Transactions</p>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 2 — The Problem ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>The <span class="hl">Problem</span></h2>
+      <p class="sub">Our analytics are ephemeral — they die with the pod</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c2">
+        <div class="card rb">
+          <span class="icon">&#128163;</span>
+          <div class="ct">In-Memory = Lost on Restart</div>
+          <p>analytics-service stores stats in RAM. Pod restarts? All data gone. Zero history.</p>
+        </div>
+        <div class="card rb">
+          <span class="icon">&#128269;</span>
+          <div class="ct">No Ad-Hoc Queries</div>
+          <p>"Show me all transactions > 5000 from last week" — impossible with in-memory counters.</p>
+        </div>
+        <div class="card bb">
+          <span class="icon">&#128202;</span>
+          <div class="ct">No Dashboards</div>
+          <p>Business wants charts: daily volume, top senders, fraud trends. Can't build on volatile data.</p>
+        </div>
+        <div class="card bb">
+          <span class="icon">&#128640;</span>
+          <div class="ct">Scale Problem</div>
+          <p>1M transactions/day — you can't store that in a Java Map. You need a data warehouse.</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 16px;">
+        <strong>Solution:</strong> Stream every transaction event from Pub/Sub into BigQuery. Persistent, queryable, scalable.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 3 — What is BigQuery ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>What is <span class="hl">BigQuery</span>?</h2>
+      <p class="sub">Google's serverless, petabyte-scale data warehouse</p>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Serverless</div>
+            <p class="fd">No clusters, no VMs, no capacity planning. Just create a table and query. Google handles infra.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">Standard SQL</div>
+            <p class="fd">Write familiar SQL. Joins, aggregations, window functions — all supported. No new query language.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Columnar Storage</div>
+            <p class="fd">Data stored by column, not row. Scanning 1 column of 1B rows is fast. Perfect for analytics.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Streaming Inserts</div>
+            <p class="fd">Push rows in real-time via API. Available for query within seconds. No batch ETL needed.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">5</div>
+          <div>
+            <div class="ft">Pay Per Query</div>
+            <p class="fd">Storage: ~$0.02/GB/month. Queries: $5/TB scanned. First 1TB/month free. 10GB storage free.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">6</div>
+          <div>
+            <div class="ft">Petabyte Scale</div>
+            <p class="fd">Query terabytes in seconds. No indexes needed — BigQuery scans columns in parallel across thousands of nodes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 4 — Architecture ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2><span class="hl">Architecture</span></h2>
+      <p class="sub">Pub/Sub &rarr; Analytics Service &rarr; BigQuery</p>
+    </div>
+    <div class="slide-body">
+      <div class="arch-flow">
+        <div class="anode public">UPI Transfer Service (publishes events)</div>
+        <div class="adown">&#8595;</div>
+        <div class="anode" style="border-color: var(--orange); background: var(--orange-light); color: #b45309;">Pub/Sub Topic: transaction-events</div>
+        <div class="adown">&#8595; analytics-sub</div>
+        <div class="anode private">Analytics Service (subscriber)</div>
+        <div class="adown">&#8595; Streaming Insert API</div>
+        <div class="anode" style="border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark);">BigQuery: upi_analytics.transactions</div>
+      </div>
+      <div class="cards c3" style="margin-top: 20px;">
+        <div class="card centered ob">
+          <div class="ct">Real-time</div>
+          <p>Events arrive in BigQuery within seconds of transfer</p>
+        </div>
+        <div class="card centered bb">
+          <div class="ct">Dual Write</div>
+          <p>In-memory stats (fast) + BigQuery (persistent) — best of both</p>
+        </div>
+        <div class="card centered gb">
+          <div class="ct">Decoupled</div>
+          <p>BigQuery failure doesn't block transfers. Events buffered in Pub/Sub.</p>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 5 — BigQuery Concepts ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>BigQuery <span class="hl">Concepts</span></h2>
+      <p class="sub">Project &rarr; Dataset &rarr; Table</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="arch-flow">
+            <div class="anode public">GCP Project (your-project-id)</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode" style="border-color: var(--orange); background: var(--orange-light); color: #b45309;">Dataset (upi_analytics)</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode private">Table (transactions)</div>
+          </div>
+        </div>
+        <div class="split-right">
+          <table>
+            <thead><tr><th>Concept</th><th>Analogy</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Project</strong></td><td>Database server</td></tr>
+              <tr><td><strong>Dataset</strong></td><td>Database / schema</td></tr>
+              <tr><td><strong>Table</strong></td><td>Table (same!)</td></tr>
+              <tr><td><strong>Column</strong></td><td>Column with strict types</td></tr>
+              <tr><td><strong>Job</strong></td><td>A query execution</td></tr>
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top: 12px; font-size: 1.1rem;">
+            Datasets control <strong>access</strong> and <strong>location</strong>. Tables store the data. Jobs run the queries.
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 6 — Table Schema ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Our <span class="hl">Table Schema</span></h2>
+      <p class="sub">upi_analytics.transactions</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>transaction_id</strong></td><td>INT64</td><td>Unique transaction ID from UPI service</td></tr>
+          <tr><td><strong>sender_upi_id</strong></td><td>STRING</td><td>Who sent the money (nag@upi)</td></tr>
+          <tr><td><strong>receiver_upi_id</strong></td><td>STRING</td><td>Who received the money (ram@upi)</td></tr>
+          <tr><td><strong>amount</strong></td><td>NUMERIC</td><td>Transfer amount (precise decimal)</td></tr>
+          <tr><td><strong>status</strong></td><td>STRING</td><td>SUCCESS or FAILED</td></tr>
+          <tr><td><strong>timestamp</strong></td><td>TIMESTAMP</td><td>When the transfer happened</td></tr>
+          <tr><td><strong>ingested_at</strong></td><td>TIMESTAMP</td><td>When it arrived in BigQuery</td></tr>
+        </tbody>
+      </table>
+      <div class="callout green" style="margin-top: 16px;">
+        <strong>ingested_at</strong> lets you measure pipeline latency: <code>ingested_at - timestamp</code> = how fast events flow from transfer to BigQuery.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 7 — Streaming Insert ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Streaming <span class="hl">Insert</span> API</h2>
+      <p class="sub">Real-time data ingestion into BigQuery</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="code-block">
+            <span class="lang">Java</span>
+            <pre><span class="comment">// Build a row</span>
+Map&lt;String, Object&gt; row = <span class="cmd">new</span> HashMap&lt;&gt;();
+row.put(<span class="str">"transaction_id"</span>, event.getTransactionId());
+row.put(<span class="str">"sender_upi_id"</span>, event.getSenderUpiId());
+row.put(<span class="str">"amount"</span>, event.getAmount());
+row.put(<span class="str">"timestamp"</span>, event.getTimestamp());
+row.put(<span class="str">"ingested_at"</span>, Instant.now());
+
+<span class="comment">// Stream into BigQuery</span>
+InsertAllRequest request = InsertAllRequest
+    .newBuilder(tableId)
+    .addRow(row)
+    .build();
+
+InsertAllResponse response = bigQuery.insertAll(request);
+
+<span class="flag">if</span> (response.hasErrors()) {
+    <span class="comment">// handle errors</span>
+}</pre>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="card gb" style="margin-bottom: 12px;">
+            <div class="ct">Available Instantly</div>
+            <p>Streamed rows queryable within seconds. No waiting for batch loads.</p>
+          </div>
+          <div class="card ob" style="margin-bottom: 12px;">
+            <div class="ct">Pricing</div>
+            <p>Streaming: free for the first 2TB/month, then $0.01/200MB. Very cheap for our volume.</p>
+          </div>
+          <div class="card rb">
+            <div class="ct">At-Least-Once</div>
+            <p>Streaming API is at-least-once. Duplicate rows possible. Use transaction_id for dedup.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 8 — SQL Queries ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Querying with <span class="hl">SQL</span></h2>
+      <p class="sub">The real power — ask any question about your transaction data</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c2">
+        <div class="card bb">
+          <div class="ct">Daily Volume</div>
+          <div class="code-block" style="margin-top: 8px;">
+            <pre style="font-size: 0.85rem; line-height: 1.5;"><span class="cmd">SELECT</span> DATE(timestamp) <span class="flag">AS</span> day,
+       COUNT(*) <span class="flag">AS</span> txn_count,
+       SUM(amount) <span class="flag">AS</span> total_volume
+<span class="cmd">FROM</span> upi_analytics.transactions
+<span class="cmd">GROUP BY</span> day <span class="cmd">ORDER BY</span> day</pre>
+          </div>
+        </div>
+        <div class="card gb">
+          <div class="ct">Top Senders</div>
+          <div class="code-block" style="margin-top: 8px;">
+            <pre style="font-size: 0.85rem; line-height: 1.5;"><span class="cmd">SELECT</span> sender_upi_id,
+       COUNT(*) <span class="flag">AS</span> txn_count,
+       SUM(amount) <span class="flag">AS</span> total_sent
+<span class="cmd">FROM</span> upi_analytics.transactions
+<span class="cmd">WHERE</span> status = <span class="str">'SUCCESS'</span>
+<span class="cmd">GROUP BY</span> 1 <span class="cmd">ORDER BY</span> 3 <span class="cmd">DESC</span></pre>
+          </div>
+        </div>
+        <div class="card ob">
+          <div class="ct">Failed Transfers</div>
+          <div class="code-block" style="margin-top: 8px;">
+            <pre style="font-size: 0.85rem; line-height: 1.5;"><span class="cmd">SELECT</span> sender_upi_id, amount,
+       timestamp
+<span class="cmd">FROM</span> upi_analytics.transactions
+<span class="cmd">WHERE</span> status = <span class="str">'FAILED'</span>
+<span class="cmd">ORDER BY</span> timestamp <span class="cmd">DESC</span>
+<span class="cmd">LIMIT</span> 10</pre>
+          </div>
+        </div>
+        <div class="card rb">
+          <div class="ct">Pipeline Latency</div>
+          <div class="code-block" style="margin-top: 8px;">
+            <pre style="font-size: 0.85rem; line-height: 1.5;"><span class="cmd">SELECT</span>
+  AVG(TIMESTAMP_DIFF(
+    ingested_at, timestamp, SECOND
+  )) <span class="flag">AS</span> avg_latency_sec
+<span class="cmd">FROM</span> upi_analytics.transactions</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 9 — Batch vs Streaming ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Batch vs <span class="hl">Streaming</span></h2>
+      <p class="sub">Two ways to get data into BigQuery</p>
+    </div>
+    <div class="slide-body">
+      <div class="compare">
+        <div class="compare-box bad">
+          <div class="compare-head">Batch Load</div>
+          <div class="compare-body">
+            <p><strong>How:</strong> Upload CSV/JSON/Parquet files via <code>bq load</code> or Storage API</p>
+            <p style="margin-top: 8px;"><strong>Speed:</strong> Minutes to hours (depends on file size)</p>
+            <p style="margin-top: 8px;"><strong>Cost:</strong> Free! Batch loads don't cost anything</p>
+            <p style="margin-top: 8px;"><strong>When:</strong> Historical data migration, nightly ETL, large bulk imports</p>
+          </div>
+        </div>
+        <div class="compare-box good">
+          <div class="compare-head">Streaming Insert (our approach)</div>
+          <div class="compare-body">
+            <p><strong>How:</strong> <code>insertAll()</code> API call per row/batch from application code</p>
+            <p style="margin-top: 8px;"><strong>Speed:</strong> Seconds (queryable almost immediately)</p>
+            <p style="margin-top: 8px;"><strong>Cost:</strong> $0.01/200MB (first 2TB/month free)</p>
+            <p style="margin-top: 8px;"><strong>When:</strong> Real-time analytics, event streams, live dashboards</p>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 16px;">
+        We use <strong>streaming inserts</strong> because transactions happen in real-time and we want instant queryability.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 10 — Code Walkthrough ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Code <span class="hl">Walkthrough</span></h2>
+      <p class="sub">Key files in analytics-service-bigquery</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>File</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>BigQueryConfig.java</strong></td><td>Creates <code>BigQuery</code> client bean with project ID</td></tr>
+          <tr><td><strong>BigQueryService.java</strong></td><td>Auto-creates dataset + table, <code>streamTransaction()</code> method, error tracking</td></tr>
+          <tr><td><strong>AnalyticsSubscriber.java</strong></td><td>Pub/Sub subscriber — updates in-memory stats AND streams to BigQuery</td></tr>
+          <tr><td><strong>StatsController.java</strong></td><td><code>GET /stats</code> — now includes BigQuery stats (rows inserted, errors)</td></tr>
+          <tr><td><strong>application.yml</strong></td><td>Config: <code>bigquery.dataset</code>, <code>bigquery.table</code>, <code>pubsub.subscription</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout green" style="margin-top: 16px;">
+        <strong>Auto-setup:</strong> BigQueryService creates the dataset and table on startup if they don't exist. No manual DDL needed.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 11 — Deploying on GCP ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Deploying on <span class="hl">GCP</span></h2>
+      <p class="sub">Cloud Run + Pub/Sub + BigQuery</p>
+    </div>
+    <div class="slide-body">
+      <div class="split r60-40">
+        <div class="split-left">
+          <div class="code-block">
+            <span class="lang">bash</span>
+            <pre><span class="comment"># 1. Enable BigQuery API</span>
+<span class="cmd">gcloud</span> services enable bigquery.googleapis.com
+
+<span class="comment"># 2. Build and push image</span>
+<span class="cmd">gcloud</span> builds submit \
+  <span class="flag">--tag</span> gcr.io/$PROJECT_ID/analytics-bq
+
+<span class="comment"># 3. Deploy to Cloud Run</span>
+<span class="cmd">gcloud</span> run deploy <span class="str">analytics-bq</span> \
+  <span class="flag">--image</span>=gcr.io/$PROJECT_ID/analytics-bq \
+  <span class="flag">--set-env-vars</span>=<span class="str">"GCP_PROJECT_ID=$PROJECT_ID,\
+BQ_DATASET=upi_analytics,BQ_TABLE=transactions"</span> \
+  <span class="flag">--vpc-connector</span>=upi-connector \
+  <span class="flag">--no-cpu-throttling</span> \
+  <span class="flag">--min-instances</span>=1
+
+<span class="comment"># 4. Query your data!</span>
+<span class="cmd">bq</span> query <span class="flag">--use_legacy_sql=false</span> <span class="str">\
+  'SELECT * FROM upi_analytics.transactions
+   ORDER BY timestamp DESC LIMIT 5'</span></pre>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="card ob" style="margin-bottom: 12px;">
+            <div class="ct">--no-cpu-throttling</div>
+            <p>Keeps CPU active between requests. Required for Pub/Sub subscriber (always listening).</p>
+          </div>
+          <div class="card bb" style="margin-bottom: 12px;">
+            <div class="ct">--min-instances=1</div>
+            <p>Always keep one instance warm. Pub/Sub needs a listener running at all times.</p>
+          </div>
+          <div class="card gb">
+            <div class="ct">IAM</div>
+            <p>Cloud Run service account needs <code>bigquery.dataEditor</code> and <code>pubsub.subscriber</code> roles.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 12 — BigQuery Console ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>BigQuery <span class="hl">Console</span></h2>
+      <p class="sub">Run SQL queries from the browser</p>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Open Console</div>
+            <p class="fd">Go to <code>console.cloud.google.com/bigquery</code> &rarr; select your project</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">Browse Data</div>
+            <p class="fd">Expand project &rarr; upi_analytics &rarr; transactions. Click "Preview" to see rows.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Write SQL</div>
+            <p class="fd">Click "Compose new query". Write SQL. Click "Run". Results appear in seconds.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Save & Share</div>
+            <p class="fd">Save queries, schedule them, export results as CSV, or connect to Looker Studio for dashboards.</p>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 12px;">
+        <strong>bq CLI</strong> is also available: <code>bq query --use_legacy_sql=false 'SELECT ...'</code> — great for scripting and automation.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 13 — Production Considerations ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Production <span class="hl">Considerations</span></h2>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Batch Streaming Inserts</div>
+            <p class="fd">Don't insert 1 row at a time in production. Buffer 100-500 rows and insert in one API call. Much more efficient.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">Deduplication</div>
+            <p class="fd">Streaming is at-least-once. Use <code>insertId</code> (transaction_id) to let BigQuery dedup. Or use <code>DISTINCT</code> in queries.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Partitioning</div>
+            <p class="fd">Partition by <code>timestamp</code> (day). Queries that filter by date scan only relevant partitions = faster + cheaper.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">Cost Control</div>
+            <p class="fd">Set project-level query quotas. Use <code>--maximum_bytes_billed</code> to prevent expensive queries.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">5</div>
+          <div>
+            <div class="ft">Alternatives</div>
+            <p class="fd">For simple cases: Pub/Sub &rarr; BigQuery subscription (zero code). For complex: Dataflow (Apache Beam).</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">6</div>
+          <div>
+            <div class="ft">Access Control</div>
+            <p class="fd">Grant <code>bigquery.dataViewer</code> to analysts, <code>bigquery.dataEditor</code> to services. Dataset-level or table-level IAM.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 14 — Key Takeaways ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Key <span class="hl">Takeaways</span></h2>
+    </div>
+    <div class="slide-body">
+      <ul class="takeaways">
+        <li><strong>BigQuery</strong> = serverless data warehouse. Petabyte-scale, standard SQL, pay-per-query.</li>
+        <li><strong>Streaming Inserts</strong> push rows in real-time. Queryable within seconds. Perfect for event streams.</li>
+        <li><strong>Architecture:</strong> Pub/Sub &rarr; Analytics Service &rarr; BigQuery. Decoupled, resilient, scalable.</li>
+        <li><strong>Auto-setup:</strong> Our service creates the dataset and table on startup — no manual DDL.</li>
+        <li><strong>SQL Queries:</strong> Daily volume, top senders, failed transfers, pipeline latency — all with standard SQL.</li>
+        <li><strong>Cost:</strong> First 1TB/month queries free, 10GB storage free. Streaming first 2TB/month free.</li>
+      </ul>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 15 — END ============ -->
+  <section class="slide slide--end">
+    <h2>Lab Time!</h2>
+    <p>Deploy analytics-service-bigquery to Cloud Run</p>
+    <p>Stream transactions and query with SQL</p>
+    <div class="next-box">Next Up &rarr; GKE Deployment</div>
+    <span class="snum"></span>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<button class="nav-btn prev" id="btnPrev" aria-label="Previous">&larr;</button>
+<button class="nav-btn next" id="btnNext" aria-label="Next">&rarr;</button>
+<div class="progress" id="progress"></div>
+<div class="hint" id="hint">Use arrow keys or swipe to navigate &middot; Press F for fullscreen</div>
+
+<script src="slides.js"></script>
+</body>
+</html>

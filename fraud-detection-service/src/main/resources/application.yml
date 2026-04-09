@@ -1,0 +1,26 @@
+server:
+  port: ${PORT:8082}
+
+spring:
+  application:
+    name: fraud-detection-service
+  cloud:
+    gcp:
+      project-id: ${GCP_PROJECT_ID:test-project}
+      pubsub:
+        emulator-host: ${PUBSUB_EMULATOR_HOST:}
+
+pubsub:
+  subscription: fraud-detection-sub
+
+# Fraud detection thresholds
+fraud:
+  high-amount-threshold: 5000
+  rapid-transfer-window-seconds: 60
+  rapid-transfer-max-count: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

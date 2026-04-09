@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GKE — Deploying UPI Microservices to Kubernetes</title>
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+<div class="deck">
+
+  <!-- ============ SLIDE 1 — HERO ============ -->
+  <section class="slide slide--hero active">
+    <div class="badge">GCP Masterclass</div>
+    <h1>GKE</h1>
+    <p class="tagline">Deploying UPI Microservices to Kubernetes</p>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 2 — Why Kubernetes ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Why <span class="hl">Kubernetes</span>?</h2>
+      <p class="sub">We have 4 services — how do we run them at scale?</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c2">
+        <div class="card rb">
+          <span class="icon">&#128230;</span>
+          <div class="ct">4 Services, 4 Problems</div>
+          <p>Each service needs: deployment, scaling, restart on crash, networking, config management</p>
+        </div>
+        <div class="card rb">
+          <span class="icon">&#128295;</span>
+          <div class="ct">Manual = Error-Prone</div>
+          <p>SSH into VMs, pull images, restart processes... works for 1 service, nightmare for 10</p>
+        </div>
+        <div class="card gb">
+          <span class="icon">&#9881;</span>
+          <div class="ct">Kubernetes = Orchestration</div>
+          <p>Declare what you want (3 replicas, 512MB RAM). K8s makes it happen and keeps it that way.</p>
+        </div>
+        <div class="card gb">
+          <span class="icon">&#128640;</span>
+          <div class="ct">GKE = Managed K8s</div>
+          <p>Google runs the control plane. You manage your workloads. Best of both worlds.</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 16px;">
+        <strong>Think of Kubernetes as a production-grade docker-compose</strong> — but with auto-healing, scaling, rolling updates, and service discovery built in.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 3 — Our Services ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Our <span class="hl">4 Microservices</span></h2>
+      <p class="sub">The UPI platform we're deploying to GKE</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c4">
+        <div class="card centered bb">
+          <span class="icon">&#128179;</span>
+          <div class="ct">UPI Transfer</div>
+          <p>REST API<br>Port 8080<br>2 replicas<br>Pub/Sub publisher</p>
+        </div>
+        <div class="card centered gb">
+          <span class="icon">&#128172;</span>
+          <div class="ct">Notification</div>
+          <p>SMS alerts<br>Port 8081<br>1 replica<br>Pub/Sub subscriber</p>
+        </div>
+        <div class="card centered ob">
+          <span class="icon">&#128680;</span>
+          <div class="ct">Fraud Detection</div>
+          <p>Fraud rules<br>Port 8082<br>1 replica<br>Pub/Sub subscriber</p>
+        </div>
+        <div class="card centered" style="border-left: 4px solid #9333ea;">
+          <span class="icon">&#128202;</span>
+          <div class="ct">Analytics</div>
+          <p>Real-time stats<br>Port 8083<br>1 replica<br>Pub/Sub subscriber</p>
+        </div>
+      </div>
+      <div class="arrow-flow" style="margin-top: 20px;">
+        <div class="step">UPI Service</div>
+        <div class="arr">&rarr;</div>
+        <div class="step org">Pub/Sub Topic</div>
+        <div class="arr">&rarr;</div>
+        <div class="step grn">3 Subscribers</div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 4 — K8s Core Concepts ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Kubernetes <span class="hl">Core Concepts</span></h2>
+      <p class="sub">The 5 building blocks you need to know</p>
+    </div>
+    <div class="slide-body">
+      <div class="features">
+        <div class="feat">
+          <div class="num">1</div>
+          <div>
+            <div class="ft">Pod</div>
+            <p class="fd">Smallest deployable unit. Runs one or more containers. Gets an IP. Ephemeral — can die anytime.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">2</div>
+          <div>
+            <div class="ft">Deployment</div>
+            <p class="fd">Declares desired state: "run 2 replicas of upi-service:latest". K8s maintains this count automatically.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">3</div>
+          <div>
+            <div class="ft">Service</div>
+            <p class="fd">Stable network endpoint for pods. DNS name + load balancing. Pods die, Service stays.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">4</div>
+          <div>
+            <div class="ft">ConfigMap</div>
+            <p class="fd">Externalized config (env vars, files). Change config without rebuilding images.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">5</div>
+          <div>
+            <div class="ft">Ingress</div>
+            <p class="fd">Routes external HTTP traffic to internal Services. Single public IP for all your APIs.</p>
+          </div>
+        </div>
+        <div class="feat">
+          <div class="num">6</div>
+          <div>
+            <div class="ft">Namespace</div>
+            <p class="fd">Logical isolation. We use <code>upi-system</code> to group all our services together.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 5 — GKE Architecture ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>GKE <span class="hl">Architecture</span></h2>
+      <p class="sub">How our services run on GKE</p>
+    </div>
+    <div class="slide-body">
+      <div class="arch-flow">
+        <div class="anode public">Internet (Client)</div>
+        <div class="adown">&#8595;</div>
+        <div class="anode" style="border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark);">GCP Load Balancer (Ingress)</div>
+        <div class="adown">&#8595;</div>
+        <div class="anode">GKE Cluster (upi-cluster)</div>
+      </div>
+      <div class="cards c4" style="margin-top: 16px;">
+        <div class="card centered bb" style="padding: 14px;">
+          <div class="ct" style="font-size: 1.1rem;">upi-transfer</div>
+          <p style="font-size: 0.95rem;">Pod x2</p>
+        </div>
+        <div class="card centered gb" style="padding: 14px;">
+          <div class="ct" style="font-size: 1.1rem;">notification</div>
+          <p style="font-size: 0.95rem;">Pod x1</p>
+        </div>
+        <div class="card centered ob" style="padding: 14px;">
+          <div class="ct" style="font-size: 1.1rem;">fraud-detection</div>
+          <p style="font-size: 0.95rem;">Pod x1</p>
+        </div>
+        <div class="card centered" style="padding: 14px; border-left: 4px solid #9333ea;">
+          <div class="ct" style="font-size: 1.1rem;">analytics</div>
+          <p style="font-size: 0.95rem;">Pod x1</p>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top: 12px;">
+        Only <strong>upi-transfer-service</strong> is exposed via Ingress. The 3 subscribers are internal — they pull from Pub/Sub, no inbound traffic needed.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 6 — K8s Manifest Walkthrough ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Manifest <span class="hl">Walkthrough</span></h2>
+      <p class="sub">What our YAML files do</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>File</th><th>Resource</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>namespace.yaml</strong></td><td>Namespace</td><td>Creates <code>upi-system</code> — isolates our workloads</td></tr>
+          <tr><td><strong>configmap.yaml</strong></td><td>ConfigMap</td><td>Shared config: project ID, Pub/Sub topic/subscriptions</td></tr>
+          <tr><td><strong>upi-transfer-service.yaml</strong></td><td>Deployment + Service</td><td>2 replicas, health checks, exposed on port 80</td></tr>
+          <tr><td><strong>notification-service.yaml</strong></td><td>Deployment + Service</td><td>1 replica, Pub/Sub subscriber</td></tr>
+          <tr><td><strong>fraud-detection-service.yaml</strong></td><td>Deployment + Service</td><td>1 replica, fraud rules engine</td></tr>
+          <tr><td><strong>analytics-service.yaml</strong></td><td>Deployment + Service</td><td>1 replica, real-time stats</td></tr>
+          <tr><td><strong>ingress.yaml</strong></td><td>Ingress</td><td>Exposes <code>/api/*</code> to the internet via GCP LB</td></tr>
+          <tr><td><strong>deploy.sh</strong></td><td>Script</td><td>One command: create cluster, build images, deploy all</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 7 — Deployment YAML ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Deployment <span class="hl">YAML</span> Explained</h2>
+      <p class="sub">Anatomy of a Kubernetes Deployment</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="code-block">
+            <span class="lang">yaml</span>
+            <pre><span class="cmd">apiVersion:</span> apps/v1
+<span class="cmd">kind:</span> Deployment
+<span class="cmd">metadata:</span>
+  <span class="flag">name:</span> <span class="str">upi-transfer-service</span>
+  <span class="flag">namespace:</span> <span class="str">upi-system</span>
+<span class="cmd">spec:</span>
+  <span class="flag">replicas:</span> <span class="str">2</span>
+  <span class="cmd">template:</span>
+    <span class="cmd">spec:</span>
+      <span class="cmd">containers:</span>
+        - <span class="flag">image:</span> <span class="str">...upi-transfer:latest</span>
+          <span class="flag">ports:</span>
+            - <span class="flag">containerPort:</span> <span class="str">8080</span>
+          <span class="flag">resources:</span>
+            <span class="flag">requests:</span> { <span class="str">cpu: 250m, memory: 256Mi</span> }
+            <span class="flag">limits:</span>   { <span class="str">cpu: 500m, memory: 512Mi</span> }
+          <span class="flag">readinessProbe:</span>
+            <span class="flag">httpGet:</span> <span class="str">/actuator/health</span>
+          <span class="flag">livenessProbe:</span>
+            <span class="flag">httpGet:</span> <span class="str">/actuator/health</span></pre>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="features" style="grid-template-columns: 1fr;">
+            <div class="feat">
+              <div class="num" style="background: var(--blue);">R</div>
+              <div>
+                <div class="ft">replicas: 2</div>
+                <p class="fd">K8s ensures 2 pods always running. One dies? New one starts automatically.</p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num" style="background: var(--green);">H</div>
+              <div>
+                <div class="ft">Health Probes</div>
+                <p class="fd"><strong>Readiness:</strong> Don't send traffic until healthy. <strong>Liveness:</strong> Restart if stuck.</p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num" style="background: var(--orange);">R</div>
+              <div>
+                <div class="ft">Resources</div>
+                <p class="fd"><strong>Requests:</strong> guaranteed minimum. <strong>Limits:</strong> maximum allowed. Prevents noisy neighbors.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 8 — Service & Ingress ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Service &amp; <span class="hl">Ingress</span></h2>
+      <p class="sub">How traffic flows from internet to pods</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="arch-flow">
+            <div class="anode public">curl http://&lt;INGRESS-IP&gt;/api/balance/nag@upi</div>
+            <div class="adown">&#8595;</div>
+            <div class="anode" style="border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark);">Ingress (GCP HTTP Load Balancer)</div>
+            <div class="adown">&#8595; routes /api/*</div>
+            <div class="anode private">Service: upi-transfer-service (ClusterIP)</div>
+            <div class="adown">&#8595; load balances</div>
+            <div class="anode">Pod 1 &nbsp;&nbsp;&nbsp; Pod 2</div>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="card bb" style="margin-bottom: 12px;">
+            <div class="ct">ClusterIP Service</div>
+            <p>Internal-only DNS name. Other pods can reach it as <code>upi-transfer-service.upi-system</code></p>
+          </div>
+          <div class="card gb" style="margin-bottom: 12px;">
+            <div class="ct">Ingress</div>
+            <p>Creates a GCP HTTP(S) Load Balancer automatically. Gives you a public IP.</p>
+          </div>
+          <div class="card ob">
+            <div class="ct">Subscriber Services</div>
+            <p>No Ingress needed! They <strong>pull</strong> from Pub/Sub — no inbound traffic required.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 9 — Deploy Steps ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Deployment <span class="hl">Steps</span></h2>
+      <p class="sub">From code to running cluster</p>
+    </div>
+    <div class="slide-body">
+      <div class="code-block">
+        <span class="lang">bash</span>
+        <pre><span class="comment"># 1. Create GKE cluster</span>
+<span class="cmd">gcloud</span> container clusters create <span class="str">upi-cluster</span> \
+  <span class="flag">--region</span>=us-central1 <span class="flag">--num-nodes</span>=1 <span class="flag">--machine-type</span>=e2-medium
+
+<span class="comment"># 2. Create Artifact Registry repo</span>
+<span class="cmd">gcloud</span> artifacts repositories create <span class="str">upi-repo</span> \
+  <span class="flag">--repository-format</span>=docker <span class="flag">--location</span>=us-central1
+
+<span class="comment"># 3. Build & push images (for each service)</span>
+<span class="cmd">docker</span> build -t $REGISTRY/upi-transfer-service:latest .
+<span class="cmd">docker</span> push $REGISTRY/upi-transfer-service:latest
+
+<span class="comment"># 4. Apply K8s manifests</span>
+<span class="cmd">kubectl</span> apply -f k8s/namespace.yaml
+<span class="cmd">kubectl</span> apply -f k8s/configmap.yaml
+<span class="cmd">kubectl</span> apply -f k8s/upi-transfer-service.yaml
+<span class="cmd">kubectl</span> apply -f k8s/notification-service.yaml
+<span class="cmd">kubectl</span> apply -f k8s/fraud-detection-service.yaml
+<span class="cmd">kubectl</span> apply -f k8s/analytics-service.yaml
+<span class="cmd">kubectl</span> apply -f k8s/ingress.yaml
+
+<span class="comment"># 5. Or just run: ./k8s/deploy.sh my-project us-central1</span></pre>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 10 — kubectl Commands ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2><span class="hl">kubectl</span> Cheat Sheet</h2>
+      <p class="sub">Essential commands for managing your cluster</p>
+    </div>
+    <div class="slide-body">
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What It Does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>kubectl get pods -n upi-system</code></td><td>List all pods and their status</td></tr>
+          <tr><td><code>kubectl get svc -n upi-system</code></td><td>List services and their IPs</td></tr>
+          <tr><td><code>kubectl logs &lt;pod&gt; -n upi-system</code></td><td>View pod logs</td></tr>
+          <tr><td><code>kubectl describe pod &lt;pod&gt; -n upi-system</code></td><td>Detailed pod info (events, errors)</td></tr>
+          <tr><td><code>kubectl scale deploy upi-transfer-service --replicas=3</code></td><td>Scale up/down</td></tr>
+          <tr><td><code>kubectl rollout restart deploy/upi-transfer-service</code></td><td>Rolling restart (zero downtime)</td></tr>
+          <tr><td><code>kubectl port-forward svc/analytics-service 8083:80</code></td><td>Access internal service locally</td></tr>
+          <tr><td><code>kubectl top pods -n upi-system</code></td><td>CPU/memory usage per pod</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 11 — Scaling ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2><span class="hl">Scaling</span> on GKE</h2>
+      <p class="sub">Manual scaling, autoscaling, and node autoscaling</p>
+    </div>
+    <div class="slide-body">
+      <div class="cards c3">
+        <div class="card centered bb">
+          <span class="icon">&#128073;</span>
+          <div class="ct">Manual</div>
+          <p><code>kubectl scale deploy upi-transfer-service --replicas=5</code><br><br>Instant. You decide when and how many.</p>
+        </div>
+        <div class="card centered gb">
+          <span class="icon">&#128200;</span>
+          <div class="ct">HPA (Pod Autoscaler)</div>
+          <p>Scale pods based on CPU/memory.<br><br><code>--min=2 --max=10 --cpu-percent=70</code></p>
+        </div>
+        <div class="card centered ob">
+          <span class="icon">&#127759;</span>
+          <div class="ct">Cluster Autoscaler</div>
+          <p>Scale nodes when pods can't be scheduled.<br><br>GKE adds/removes VMs automatically.</p>
+        </div>
+      </div>
+      <div class="code-block" style="margin-top: 16px;">
+        <span class="lang">bash</span>
+        <pre><span class="comment"># Create HPA for upi-transfer-service</span>
+<span class="cmd">kubectl</span> autoscale deployment <span class="str">upi-transfer-service</span> \
+  -n upi-system <span class="flag">--min</span>=2 <span class="flag">--max</span>=10 <span class="flag">--cpu-percent</span>=70</pre>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 12 — Rolling Updates ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Rolling <span class="hl">Updates</span></h2>
+      <p class="sub">Zero-downtime deployments</p>
+    </div>
+    <div class="slide-body">
+      <div class="split">
+        <div class="split-left">
+          <div class="features" style="grid-template-columns: 1fr;">
+            <div class="feat">
+              <div class="num">1</div>
+              <div>
+                <div class="ft">Push new image</div>
+                <p class="fd"><code>docker push .../upi-transfer-service:v2</code></p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num">2</div>
+              <div>
+                <div class="ft">Update deployment</div>
+                <p class="fd"><code>kubectl set image deploy/upi-transfer-service upi-transfer-service=...v2</code></p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num">3</div>
+              <div>
+                <div class="ft">K8s rolls out</div>
+                <p class="fd">New pod starts &rarr; readiness check passes &rarr; old pod terminates. No downtime.</p>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="num">4</div>
+              <div>
+                <div class="ft">Rollback if needed</div>
+                <p class="fd"><code>kubectl rollout undo deploy/upi-transfer-service</code></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="split-right">
+          <div class="callout green">
+            K8s only sends traffic to pods that pass the <strong>readiness probe</strong>. Users never see downtime during deploys.
+          </div>
+          <div class="callout orange" style="margin-top: 12px;">
+            <strong>Rollback</strong> is one command. K8s keeps the previous ReplicaSet. Instant undo.
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 13 — GKE vs Cloud Run ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>GKE vs <span class="hl">Cloud Run</span></h2>
+      <p class="sub">When to use which?</p>
+    </div>
+    <div class="slide-body">
+      <div class="compare">
+        <div class="compare-box bad">
+          <div class="compare-head">Cloud Run</div>
+          <div class="compare-body">
+            <p><strong>Best for:</strong> Stateless HTTP services, event-driven, low/bursty traffic</p>
+            <p style="margin-top: 8px;"><strong>Scaling:</strong> 0 to N (scale to zero = pay nothing when idle)</p>
+            <p style="margin-top: 8px;"><strong>Ops:</strong> Zero. No cluster, no nodes, no kubectl</p>
+            <p style="margin-top: 8px;"><strong>Limitations:</strong> No persistent volumes, limited control, VPC connector needed</p>
+          </div>
+        </div>
+        <div class="compare-box good">
+          <div class="compare-head">GKE</div>
+          <div class="compare-body">
+            <p><strong>Best for:</strong> Multi-service platforms, stateful workloads, full control</p>
+            <p style="margin-top: 8px;"><strong>Scaling:</strong> 1 to N (always-on, HPA, cluster autoscaler)</p>
+            <p style="margin-top: 8px;"><strong>Ops:</strong> Medium. You manage deployments, but Google manages nodes</p>
+            <p style="margin-top: 8px;"><strong>Power:</strong> Full K8s API, custom networking, service mesh, GPU workloads</p>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top: 16px;">
+        <strong>Our choice:</strong> GKE — because we have 4 interconnected services, need Pub/Sub subscribers always running, and want full orchestration.
+      </div>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 14 — Key Takeaways ============ -->
+  <section class="slide">
+    <div class="slide-header">
+      <h2>Key <span class="hl">Takeaways</span></h2>
+    </div>
+    <div class="slide-body">
+      <ul class="takeaways">
+        <li><strong>GKE</strong> = managed Kubernetes on GCP. Google manages the control plane, you manage workloads.</li>
+        <li><strong>Deployment</strong> declares desired state (replicas, image, resources). K8s maintains it.</li>
+        <li><strong>Service</strong> provides stable networking. Pods can die — Service DNS stays the same.</li>
+        <li><strong>Ingress</strong> exposes HTTP services via GCP Load Balancer. One public IP for all APIs.</li>
+        <li><strong>Health probes</strong> prevent traffic to unhealthy pods. Liveness restarts stuck containers.</li>
+        <li><strong>Rolling updates</strong> = zero-downtime deployments. Rollback with one command.</li>
+        <li><strong>deploy.sh</strong> script automates everything: cluster, images, manifests in one command.</li>
+      </ul>
+    </div>
+    <span class="snum"></span>
+  </section>
+
+  <!-- ============ SLIDE 15 — END ============ -->
+  <section class="slide slide--end">
+    <h2>Lab Time!</h2>
+    <p>Create a GKE cluster and deploy all 4 UPI services</p>
+    <p>Scale, update, and observe your microservices platform</p>
+    <div class="next-box">UPI Platform on Kubernetes &mdash; Complete!</div>
+    <span class="snum"></span>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<button class="nav-btn prev" id="btnPrev" aria-label="Previous">&larr;</button>
+<button class="nav-btn next" id="btnNext" aria-label="Next">&rarr;</button>
+<div class="progress" id="progress"></div>
+<div class="hint" id="hint">Use arrow keys or swipe to navigate &middot; Press F for fullscreen</div>
+
+<script src="slides.js"></script>
+</body>
+</html>
