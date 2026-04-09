@@ -3,7 +3,7 @@ spring:
     gcp:
       project-id: ${GCP_PROJECT_ID:test-project}
       pubsub:
-        emulator-host: ${PUBSUB_EMULATOR_HOST:}
+        emulator-host: ${PUBSUB_EMULATOR_HOST:localhost:8085}
 
 # Pub/Sub topic and subscription names
 pubsub:

@@ -4,7 +4,7 @@ metadata:
   name: upi-config
   namespace: upi-system
 data:
-  GCP_PROJECT_ID: "REPLACE_WITH_PROJECT_ID"
+  GCP_PROJECT_ID: "upi-workshop-492606"
   PUBSUB_TOPIC: "transaction-events"
   PUBSUB_SUBSCRIPTION_NOTIFICATION: "notification-sub"
   PUBSUB_SUBSCRIPTION_FRAUD: "fraud-detection-sub"

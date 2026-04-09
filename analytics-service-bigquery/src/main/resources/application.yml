@@ -7,8 +7,6 @@ spring:
   cloud:
     gcp:
       project-id: ${GCP_PROJECT_ID:test-project}
-      pubsub:
-        emulator-host: ${PUBSUB_EMULATOR_HOST:}
 
 # Pub/Sub subscription
 pubsub:

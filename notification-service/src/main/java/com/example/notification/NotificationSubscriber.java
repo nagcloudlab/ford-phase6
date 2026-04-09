@@ -44,13 +44,13 @@ public class NotificationSubscriber {
         log.info("====================================================");
 
         pubSubTemplate.subscribe(subscriptionName, message -> {
+
             long receiveTime = System.currentTimeMillis();
             String payload = message.getPubsubMessage().getData().toStringUtf8();
             String messageId = message.getPubsubMessage().getMessageId();
 
             try {
                 TransactionEvent event = objectMapper.readValue(payload, TransactionEvent.class);
-
                 // Calculate latency (publish → receive)
                 long publishTime = message.getPubsubMessage().getPublishTime().getSeconds() * 1000;
                 long latencyMs = receiveTime - publishTime;
@@ -79,10 +79,16 @@ public class NotificationSubscriber {
     }
 
     // Expose metrics via REST
-    public long getMessageCount() { return messageCount.get(); }
+    public long getMessageCount() {
+        return messageCount.get();
+    }
+
     public long getAvgLatencyMs() {
         long count = messageCount.get();
         return count > 0 ? totalLatencyMs.get() / count : 0;
     }
-    public LocalDateTime getStartTime() { return startTime; }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
 }
