@@ -1,0 +1,90 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: upi-cicd-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: revision
+      type: string
+      default: main
+    - name: image
+      type: string
+      description: Full container image path with tag
+    - name: project-dir
+      type: string
+      default: upi-transfer-service
+      description: Subdirectory containing the service
+    - name: service-name
+      type: string
+      default: upi-transfer-service
+    - name: project-id
+      type: string
+      default: upi-workshop-492606
+    - name: region
+      type: string
+      default: us-central1
+
+  workspaces:
+    - name: shared-workspace
+      description: Shared workspace for source code
+    - name: maven-cache
+      description: Maven dependency cache
+
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-and-test
+      taskRef:
+        name: maven-build
+      runAfter:
+        - clone
+      params:
+        - name: project-dir
+          value: $(params.project-dir)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: maven-cache
+          workspace: maven-cache
+
+    - name: build-image
+      taskRef:
+        name: kaniko-build
+      runAfter:
+        - build-and-test
+      params:
+        - name: image
+          value: $(params.image)
+        - name: project-dir
+          value: $(params.project-dir)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy
+      taskRef:
+        name: deploy-cloudrun
+      runAfter:
+        - build-image
+      params:
+        - name: service-name
+          value: $(params.service-name)
+        - name: image
+          value: $(params.image)
+        - name: region
+          value: $(params.region)
+        - name: project-id
+          value: $(params.project-id)

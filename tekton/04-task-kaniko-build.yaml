@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: kaniko-build
+spec:
+  params:
+    - name: image
+      type: string
+      description: Full image destination (e.g., us-central1-docker.pkg.dev/project/repo/image:tag)
+    - name: project-dir
+      type: string
+      default: "."
+      description: Directory containing Dockerfile
+  workspaces:
+    - name: source
+      description: Workspace with the source code and Dockerfile
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:latest
+      env:
+        - name: DOCKER_CONFIG
+          value: /kaniko/.docker
+      volumeMounts:
+        - name: docker-credentials
+          mountPath: /kaniko/.docker
+      args:
+        - --dockerfile=$(workspaces.source.path)/$(params.project-dir)/Dockerfile
+        - --context=$(workspaces.source.path)/$(params.project-dir)
+        - --destination=$(params.image)
+        - --cache=true
+        - --cache-ttl=24h
+  volumes:
+    - name: docker-credentials
+      secret:
+        secretName: docker-credentials

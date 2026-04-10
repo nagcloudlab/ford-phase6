@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-build
+spec:
+  params:
+    - name: project-dir
+      type: string
+      default: "."
+      description: Directory containing pom.xml
+  workspaces:
+    - name: source
+      description: Workspace with the source code
+    - name: maven-cache
+      description: Maven local repository cache
+  steps:
+    - name: build-and-test
+      image: maven:3.9-eclipse-temurin-17
+      workingDir: $(workspaces.source.path)/$(params.project-dir)
+      script: |
+        #!/bin/bash
+        set -e
+        echo "========================================="
+        echo "  TEKTON: Maven Build & Test"
+        echo "========================================="
+
+        # Use cached .m2 if available
+        export MAVEN_OPTS="-Dmaven.repo.local=$(workspaces.maven-cache.path)/.m2/repository"
+
+        echo "  Running: mvn clean package"
+        mvn clean package -B -q
+
+        echo "========================================="
+        echo "  Build SUCCESS"
+        echo "  JAR file:"
+        echo "========================================="
+        ls -lh target/*.jar

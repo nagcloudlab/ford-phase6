@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Demo Service</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header>
+    <h1>UPI Demo Service</h1>
+    <p>CI/CD Pipeline Showcase &mdash; Deployed via Tekton on GKE</p>
+</header>
+
+<main>
+
+    <!-- Alert Messages -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="grid">
+
+        <!-- Transfer Form -->
+        <section class="card">
+            <h2>Send Money</h2>
+            <form method="post" th:action="@{/transfer}">
+                <div class="form-group">
+                    <label for="senderUpiId">From (Sender UPI)</label>
+                    <select name="senderUpiId" id="senderUpiId" required>
+                        <option value="">-- Select Sender --</option>
+                        <option th:each="acc : ${accounts}" th:value="${acc.upiId}"
+                                th:text="${acc.holderName + ' (' + acc.upiId + ') — ₹' + acc.balance}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="receiverUpiId">To (Receiver UPI)</label>
+                    <select name="receiverUpiId" id="receiverUpiId" required>
+                        <option value="">-- Select Receiver --</option>
+                        <option th:each="acc : ${accounts}" th:value="${acc.upiId}"
+                                th:text="${acc.holderName + ' (' + acc.upiId + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" name="amount" id="amount" min="1" step="0.01" required placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label for="remark">Remark (optional)</label>
+                    <input type="text" name="remark" id="remark" placeholder="e.g., lunch, rent">
+                </div>
+                <button type="submit" class="btn">Transfer</button>
+            </form>
+        </section>
+
+        <!-- Account Balances -->
+        <section class="card">
+            <h2>Account Balances</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>UPI ID</th>
+                        <th>Name</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="acc : ${accounts}">
+                        <td th:text="${acc.upiId}"></td>
+                        <td th:text="${acc.holderName}"></td>
+                        <td class="amount" th:text="'₹' + ${#numbers.formatDecimal(acc.balance, 1, 2)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </div>
+
+    <!-- Transaction History -->
+    <section class="card full-width">
+        <h2>Transaction History</h2>
+        <div th:if="${#lists.isEmpty(transactions)}" class="empty">No transactions yet. Make a transfer above!</div>
+        <table th:unless="${#lists.isEmpty(transactions)}">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Remark</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="txn : ${transactions}">
+                    <td th:text="${txn.id}"></td>
+                    <td th:text="${txn.senderUpiId}"></td>
+                    <td th:text="${txn.receiverUpiId}"></td>
+                    <td class="amount" th:text="'₹' + ${#numbers.formatDecimal(txn.amount, 1, 2)}"></td>
+                    <td>
+                        <span class="badge" th:classappend="${txn.status.name() == 'SUCCESS'} ? 'badge-success' : 'badge-fail'"
+                              th:text="${txn.status}"></span>
+                    </td>
+                    <td th:text="${txn.remark ?: '-'}"></td>
+                    <td th:text="${#temporals.format(txn.timestamp, 'HH:mm:ss')}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</main>
+
+<footer>
+    <p>UPI Demo Service v1.0 &mdash; Built with Spring Boot 3.4.4 &amp; Thymeleaf &mdash; Deployed via Tekton CI/CD</p>
+</footer>
+
+</body>
+</html>

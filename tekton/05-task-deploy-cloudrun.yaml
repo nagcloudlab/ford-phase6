@@ -1,0 +1,59 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-cloudrun
+spec:
+  params:
+    - name: service-name
+      type: string
+      description: Cloud Run service name
+    - name: image
+      type: string
+      description: Container image to deploy
+    - name: region
+      type: string
+      default: us-central1
+    - name: project-id
+      type: string
+      description: GCP project ID
+  steps:
+    - name: deploy
+      image: google/cloud-sdk:slim
+      volumeMounts:
+        - name: gcp-credentials
+          mountPath: /secrets
+      script: |
+        #!/bin/bash
+        set -e
+        echo "========================================="
+        echo "  TEKTON: Deploy to Cloud Run"
+        echo "========================================="
+        echo "  Service: $(params.service-name)"
+        echo "  Image:   $(params.image)"
+        echo "  Region:  $(params.region)"
+
+        # Authenticate with service account
+        gcloud auth activate-service-account --key-file=/secrets/key.json
+
+        gcloud run deploy $(params.service-name) \
+          --image=$(params.image) \
+          --region=$(params.region) \
+          --project=$(params.project-id) \
+          --platform=managed \
+          --port=8080 \
+          --memory=512Mi \
+          --allow-unauthenticated \
+          --quiet
+
+        echo "========================================="
+        echo "  Deployment complete!"
+        echo "========================================="
+        SERVICE_URL=$(gcloud run services describe $(params.service-name) \
+          --region=$(params.region) \
+          --project=$(params.project-id) \
+          --format="value(status.url)")
+        echo "  URL: ${SERVICE_URL}"
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials
