@@ -4,7 +4,7 @@ metadata:
   generateName: run-upi-transfer-
 spec:
   pipelineRef:
-    name: upi-cicd-pipeline
+    name: subscriber-cicd-pipeline
   params:
     - name: repo-url
       value: https://github.com/nagcloudlab/ford-phase6.git
@@ -18,6 +18,10 @@ spec:
       value: upi-transfer-service
     - name: project-id
       value: upi-workshop-492606
+    - name: port
+      value: "8080"
+    - name: env-vars
+      value: "GCP_PROJECT_ID=upi-workshop-492606,SPRING_PROFILES_ACTIVE=pubsub"
   workspaces:
     - name: shared-workspace
       persistentVolumeClaim:
