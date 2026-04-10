@@ -1,5 +1,8 @@
 server:
   port: ${PORT:8082}
+  servlet:
+    session:
+      tracking-modes: cookie
 
 spring:
   application:

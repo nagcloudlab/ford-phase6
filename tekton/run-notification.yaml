@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: run-notification-
+spec:
+  pipelineRef:
+    name: subscriber-cicd-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/nagcloudlab/ford-phase6.git
+    - name: revision
+      value: main
+    - name: image
+      value: us-central1-docker.pkg.dev/upi-workshop-492606/upi-repo/notification-service:latest
+    - name: project-dir
+      value: notification-service
+    - name: service-name
+      value: notification-service
+    - name: project-id
+      value: upi-workshop-492606
+    - name: port
+      value: "8081"
+    - name: env-vars
+      value: "GCP_PROJECT_ID=upi-workshop-492606"
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: pvc-notification
+    - name: maven-cache
+      emptyDir: {}

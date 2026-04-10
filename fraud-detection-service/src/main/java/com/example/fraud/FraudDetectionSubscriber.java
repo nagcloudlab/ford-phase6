@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,8 @@ public class FraudDetectionSubscriber {
     private final AtomicLong alertCount = new AtomicLong(0);
     private final AtomicLong totalLatencyMs = new AtomicLong(0);
     private volatile LocalDateTime startTime;
+
+    private final List<Map<String, String>> recentChecks = new CopyOnWriteArrayList<>();
 
     // Track recent transfers per sender (for rapid-fire detection)
     private final Map<String, List<LocalDateTime>> recentTransfers = new ConcurrentHashMap<>();
@@ -117,6 +120,17 @@ public class FraudDetectionSubscriber {
                         latencyMs, count, alertCount.get());
                 log.info("-----------------------------------------------");
 
+                String result = isHighAmount ? "HIGH VALUE ALERT" : (transfers.size() > rapidTransferMaxCount ? "RAPID TRANSFER ALERT" : "CLEAN");
+                Map<String, String> check = new LinkedHashMap<>();
+                check.put("txnId", String.valueOf(event.getTransactionId()));
+                check.put("sender", event.getSenderUpiId());
+                check.put("receiver", event.getReceiverUpiId());
+                check.put("amount", event.getAmount().toString());
+                check.put("result", result);
+                check.put("time", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+                recentChecks.add(0, check);
+                if (recentChecks.size() > 50) recentChecks.remove(recentChecks.size() - 1);
+
                 message.ack();
 
             } catch (Exception e) {
@@ -133,4 +147,5 @@ public class FraudDetectionSubscriber {
         return count > 0 ? totalLatencyMs.get() / count : 0;
     }
     public LocalDateTime getStartTime() { return startTime; }
+    public List<Map<String, String>> getRecentChecks() { return recentChecks; }
 }

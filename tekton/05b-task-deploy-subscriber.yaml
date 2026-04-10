@@ -1,0 +1,69 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-cloudrun-subscriber
+spec:
+  params:
+    - name: service-name
+      type: string
+    - name: image
+      type: string
+    - name: region
+      type: string
+      default: us-central1
+    - name: project-id
+      type: string
+    - name: port
+      type: string
+      default: "8081"
+    - name: env-vars
+      type: string
+      default: ""
+      description: "Comma-separated env vars (e.g., GCP_PROJECT_ID=xxx,KEY=val)"
+  steps:
+    - name: deploy
+      image: google/cloud-sdk:slim
+      volumeMounts:
+        - name: gcp-credentials
+          mountPath: /secrets
+      script: |
+        #!/bin/bash
+        set -e
+        echo "========================================="
+        echo "  TEKTON: Deploy Subscriber to Cloud Run"
+        echo "========================================="
+        echo "  Service: $(params.service-name)"
+        echo "  Image:   $(params.image)"
+        echo "  Port:    $(params.port)"
+
+        gcloud auth activate-service-account --key-file=/secrets/key.json
+
+        ENV_FLAG=""
+        if [ -n "$(params.env-vars)" ]; then
+          ENV_FLAG="--set-env-vars=$(params.env-vars)"
+        fi
+
+        gcloud run deploy $(params.service-name) \
+          --image=$(params.image) \
+          --region=$(params.region) \
+          --project=$(params.project-id) \
+          --platform=managed \
+          --port=$(params.port) \
+          --memory=512Mi \
+          --allow-unauthenticated \
+          --no-cpu-throttling \
+          --min-instances=1 \
+          ${ENV_FLAG} \
+          --quiet
+
+        SERVICE_URL=$(gcloud run services describe $(params.service-name) \
+          --region=$(params.region) \
+          --project=$(params.project-id) \
+          --format="value(status.url)")
+        echo "========================================="
+        echo "  Deployed: ${SERVICE_URL}"
+        echo "========================================="
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials

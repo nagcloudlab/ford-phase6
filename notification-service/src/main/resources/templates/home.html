@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Service</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+        header { background: linear-gradient(135deg, #1e8e3e 0%, #137333 100%); color: #fff; text-align: center; padding: 28px 20px; }
+        header h1 { font-size: 1.8rem; font-weight: 800; }
+        header p { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+        main { max-width: 1000px; margin: 24px auto; padding: 0 20px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .stat-card .num { font-size: 2rem; font-weight: 800; color: #1e8e3e; }
+        .stat-card .label { font-size: 0.8rem; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .card { background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.2rem; font-weight: 700; color: #1e8e3e; border-bottom: 2px solid #e6f4ea; padding-bottom: 10px; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        thead th { background: #f8f9fa; padding: 10px 14px; text-align: left; font-weight: 700; color: #5f6368; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #e6f4ea; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+        tbody tr:hover { background: #f8f9fa; }
+        .amount { font-weight: 700; color: #1e8e3e; }
+        .empty { text-align: center; color: #9aa0a6; padding: 28px; }
+        footer { text-align: center; padding: 20px; color: #9aa0a6; font-size: 0.8rem; }
+        @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Notification Service</h1>
+    <p>SMS Notification Dashboard &mdash; Pub/Sub Subscriber</p>
+</header>
+<main>
+    <div class="stats">
+        <div class="stat-card"><div class="num" th:text="${messagesProcessed}">0</div><div class="label">Messages Processed</div></div>
+        <div class="stat-card"><div class="num" th:text="${avgLatencyMs} + 'ms'">0ms</div><div class="label">Avg Latency</div></div>
+        <div class="stat-card"><div class="num" th:text="${uptimeSeconds} + 's'">0s</div><div class="label">Uptime</div></div>
+        <div class="stat-card"><div class="num" th:text="${throughput}">0</div><div class="label">Msgs/Second</div></div>
+    </div>
+    <section class="card">
+        <h2>Recent Notifications</h2>
+        <div th:if="${#lists.isEmpty(notifications)}" class="empty">No notifications yet. Waiting for Pub/Sub messages...</div>
+        <table th:unless="${#lists.isEmpty(notifications)}">
+            <thead><tr><th>Time</th><th>Txn ID</th><th>From</th><th>To</th><th>Amount</th></tr></thead>
+            <tbody>
+                <tr th:each="n : ${notifications}">
+                    <td th:text="${n['time']}"></td>
+                    <td th:text="${n['txnId']}"></td>
+                    <td th:text="${n['sender']}"></td>
+                    <td th:text="${n['receiver']}"></td>
+                    <td class="amount" th:text="'₹' + ${n['amount']}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+<footer><p>Notification Service &mdash; Deployed via Tekton CI/CD</p></footer>
+</body>
+</html>

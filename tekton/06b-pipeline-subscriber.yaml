@@ -1,0 +1,93 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: subscriber-cicd-pipeline
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: image
+      type: string
+    - name: project-dir
+      type: string
+    - name: service-name
+      type: string
+    - name: project-id
+      type: string
+      default: upi-workshop-492606
+    - name: region
+      type: string
+      default: us-central1
+    - name: port
+      type: string
+      default: "8081"
+    - name: env-vars
+      type: string
+      default: ""
+
+  workspaces:
+    - name: shared-workspace
+    - name: maven-cache
+
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-and-test
+      taskRef:
+        name: maven-build
+      runAfter:
+        - clone
+      params:
+        - name: project-dir
+          value: $(params.project-dir)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: maven-cache
+          workspace: maven-cache
+
+    - name: build-image
+      taskRef:
+        name: kaniko-build
+      runAfter:
+        - build-and-test
+      params:
+        - name: image
+          value: $(params.image)
+        - name: project-dir
+          value: $(params.project-dir)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy
+      taskRef:
+        name: deploy-cloudrun-subscriber
+      runAfter:
+        - build-image
+      params:
+        - name: service-name
+          value: $(params.service-name)
+        - name: image
+          value: $(params.image)
+        - name: region
+          value: $(params.region)
+        - name: project-id
+          value: $(params.project-id)
+        - name: port
+          value: $(params.port)
+        - name: env-vars
+          value: $(params.env-vars)

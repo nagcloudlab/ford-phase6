@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: run-upi-transfer-
+spec:
+  pipelineRef:
+    name: upi-cicd-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/nagcloudlab/ford-phase6.git
+    - name: revision
+      value: main
+    - name: image
+      value: us-central1-docker.pkg.dev/upi-workshop-492606/upi-repo/upi-transfer-service:latest
+    - name: project-dir
+      value: upi-transfer-service
+    - name: service-name
+      value: upi-transfer-service
+    - name: project-id
+      value: upi-workshop-492606
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: pvc-publisher
+    - name: maven-cache
+      emptyDir: {}

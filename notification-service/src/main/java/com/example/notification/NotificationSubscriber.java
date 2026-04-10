@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -27,6 +31,7 @@ public class NotificationSubscriber {
     private final AtomicLong messageCount = new AtomicLong(0);
     private final AtomicLong totalLatencyMs = new AtomicLong(0);
     private volatile LocalDateTime startTime;
+    private final List<Map<String, String>> recentNotifications = new CopyOnWriteArrayList<>();
 
     public NotificationSubscriber(PubSubTemplate pubSubTemplate,
             @Value("${pubsub.subscription}") String subscriptionName) {
@@ -69,6 +74,15 @@ public class NotificationSubscriber {
                         count, totalLatencyMs.get() / count);
                 log.info("-----------------------------------------------");
 
+                Map<String, String> notif = new LinkedHashMap<>();
+                notif.put("txnId", String.valueOf(event.getTransactionId()));
+                notif.put("sender", event.getSenderUpiId());
+                notif.put("receiver", event.getReceiverUpiId());
+                notif.put("amount", event.getAmount().toString());
+                notif.put("time", java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+                recentNotifications.add(0, notif);
+                if (recentNotifications.size() > 50) recentNotifications.remove(recentNotifications.size() - 1);
+
                 message.ack();
 
             } catch (Exception e) {
@@ -91,4 +105,6 @@ public class NotificationSubscriber {
     public LocalDateTime getStartTime() {
         return startTime;
     }
+
+    public List<Map<String, String>> getRecentNotifications() { return recentNotifications; }
 }
