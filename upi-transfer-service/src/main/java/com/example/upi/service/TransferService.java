@@ -103,4 +103,12 @@ public class TransferService implements ITransferService {
         public List<Transaction> getTransactions(String upiId) {
                 return transactionRepository.findByUpiId(upiId);
         }
+
+        public List<Account> getAllAccounts() {
+                return accountRepository.findAll();
+        }
+
+        public List<Transaction> getAllTransactions() {
+                return transactionRepository.findAll();
+        }
 }

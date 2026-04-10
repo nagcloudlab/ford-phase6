@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upi-config
+  namespace: upi-system
+data:
+  GCP_PROJECT_ID: "upi-workshop-492606"
+  BQ_DATASET: "upi_analytics"
+  BQ_TABLE: "transactions"

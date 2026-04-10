@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Transfer Service (Pub/Sub)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+        header { background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); color: #fff; text-align: center; padding: 32px 20px; }
+        header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
+        header p { font-size: 0.95rem; opacity: 0.8; margin-top: 6px; }
+        .pubsub-badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-top: 8px; letter-spacing: 0.5px; }
+        main { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 18px; color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+        .full-width { margin-bottom: 20px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #5f6368; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1.5px solid #dadce0; border-radius: 8px; font-size: 0.95rem; font-family: inherit; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.12); }
+        .btn { width: 100%; padding: 12px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 6px; }
+        .btn:hover { background: #1557b0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        thead th { background: #f8f9fa; padding: 10px 14px; text-align: left; font-weight: 700; color: #5f6368; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e8f0fe; }
+        tbody td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+        tbody tr:hover { background: #f8f9fa; }
+        .amount { font-weight: 700; color: #1a73e8; font-variant-numeric: tabular-nums; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-success { background: #e6f4ea; color: #137333; }
+        .badge-fail { background: #fce8e6; color: #b31412; }
+        .alert { padding: 14px 18px; border-radius: 8px; margin-bottom: 18px; font-weight: 600; font-size: 0.95rem; }
+        .alert-success { background: #e6f4ea; color: #137333; border-left: 4px solid #1e8e3e; }
+        .alert-error { background: #fce8e6; color: #b31412; border-left: 4px solid #d93025; }
+        .empty { text-align: center; color: #9aa0a6; padding: 28px; font-size: 0.95rem; }
+        .links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .links a { display: inline-block; padding: 8px 16px; background: #e8f0fe; color: #1a73e8; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: background 0.2s; }
+        .links a:hover { background: #d2e3fc; }
+        footer { text-align: center; padding: 20px; color: #9aa0a6; font-size: 0.8rem; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } header h1 { font-size: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>UPI Transfer Service</h1>
+    <p>Pub/Sub Publisher &mdash; Events fan out to Notification, Fraud &amp; Analytics</p>
+    <div class="pubsub-badge">PUB/SUB ENABLED</div>
+</header>
+
+<main>
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="grid">
+        <section class="card">
+            <h2>Send Money</h2>
+            <form method="post" th:action="@{/web/transfer}">
+                <div class="form-group">
+                    <label for="senderUpiId">From (Sender UPI)</label>
+                    <select name="senderUpiId" id="senderUpiId" required>
+                        <option value="">-- Select Sender --</option>
+                        <option th:each="acc : ${accounts}" th:value="${acc.upiId}"
+                                th:text="${acc.holderName + ' (' + acc.upiId + ') — ₹' + acc.balance}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="receiverUpiId">To (Receiver UPI)</label>
+                    <select name="receiverUpiId" id="receiverUpiId" required>
+                        <option value="">-- Select Receiver --</option>
+                        <option th:each="acc : ${accounts}" th:value="${acc.upiId}"
+                                th:text="${acc.holderName + ' (' + acc.upiId + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" name="amount" id="amount" min="1" step="0.01" required placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label for="remark">Remark (optional)</label>
+                    <input type="text" name="remark" id="remark" placeholder="e.g., lunch, rent">
+                </div>
+                <button type="submit" class="btn">Transfer &amp; Publish to Pub/Sub</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Account Balances</h2>
+            <table>
+                <thead><tr><th>UPI ID</th><th>Name</th><th>Balance</th></tr></thead>
+                <tbody>
+                    <tr th:each="acc : ${accounts}">
+                        <td th:text="${acc.upiId}"></td>
+                        <td th:text="${acc.holderName}"></td>
+                        <td class="amount" th:text="'₹' + ${#numbers.formatDecimal(acc.balance, 1, 2)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="links">
+                <a href="/swagger-ui.html">Swagger API Docs</a>
+            </div>
+        </section>
+    </div>
+
+    <section class="card full-width">
+        <h2>Transaction History (published to Pub/Sub)</h2>
+        <div th:if="${#lists.isEmpty(transactions)}" class="empty">No transactions yet. Make a transfer above!</div>
+        <table th:unless="${#lists.isEmpty(transactions)}">
+            <thead><tr><th>#</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Remark</th><th>Time</th></tr></thead>
+            <tbody>
+                <tr th:each="txn : ${transactions}">
+                    <td th:text="${txn.id}"></td>
+                    <td th:text="${txn.senderUpiId}"></td>
+                    <td th:text="${txn.receiverUpiId}"></td>
+                    <td class="amount" th:text="'₹' + ${#numbers.formatDecimal(txn.amount, 1, 2)}"></td>
+                    <td><span class="badge" th:classappend="${txn.status.name() == 'SUCCESS'} ? 'badge-success' : 'badge-fail'" th:text="${txn.status}"></span></td>
+                    <td th:text="${txn.remark ?: '-'}"></td>
+                    <td th:text="${#temporals.format(txn.timestamp, 'HH:mm:ss')}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card full-width">
+        <h2>Subscriber Dashboards</h2>
+        <p style="color: #5f6368; margin-bottom: 12px; font-size: 0.95rem;">Each transfer publishes an event to Pub/Sub. These subscribers receive and process it independently:</p>
+        <div class="links">
+            <a href="https://notification-service-yaot2ftmra-uc.a.run.app/" target="_blank">Notification Service</a>
+            <a href="https://fraud-detection-service-yaot2ftmra-uc.a.run.app/" target="_blank">Fraud Detection Service</a>
+            <a href="https://analytics-bq-yaot2ftmra-uc.a.run.app/" target="_blank">Analytics + BigQuery</a>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>UPI Transfer Service v1.0 &mdash; Spring Boot 3.4.4 + Pub/Sub + Thymeleaf &mdash; Deployed via Tekton CI/CD</p>
+</footer>
+
+</body>
+</html>
