@@ -46,13 +46,13 @@ kubectl api-resources
 ### create a namespace
 
 ```bash
-kubectl create namespace batch9
+kubectl create namespace ford
 kubectl get namespaces
 ```
 
 ### switch to a namespace
 
 ```bash
-kubectl config set-context --current --namespace=batch9
+kubectl config set-context --current --namespace=ford
 ```
 

@@ -1,0 +1,54 @@
+# =========================================================================
+# emptyDir volume
+# -------------------------------------------------------------------------
+# - Created when a Pod is assigned to a Node
+# - Lives for the LIFETIME OF THE POD (not the container)
+# - Survives container restarts, but DELETED when the Pod is removed
+# - Empty at creation; each container in the Pod can mount it
+# - Backed by node's disk (default) or RAM (medium: Memory)
+# Use cases: scratch space, cache, sharing files between containers in a Pod
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bar-service-emptydir
+  labels:
+    app: bar-emptydir
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bar-emptydir
+  template:
+    metadata:
+      labels:
+        app: bar-emptydir
+    spec:
+      containers:
+        - name: bar-service
+          image: docker.io/nagabhushanamn/bar-service:v2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATA_DIR
+              value: /data
+          volumeMounts:
+            - name: scratch
+              mountPath: /data
+      volumes:
+        - name: scratch
+          emptyDir:
+            sizeLimit: 100Mi
+            # medium: Memory     # uncomment to back by tmpfs (RAM)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-service-emptydir
+spec:
+  type: ClusterIP
+  selector:
+    app: bar-emptydir
+  ports:
+    - port: 80
+      targetPort: 8080

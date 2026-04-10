@@ -1,0 +1,86 @@
+# =========================================================================
+# hostPath volume (via static PV + PVC)
+# -------------------------------------------------------------------------
+# - Mounts a file/dir FROM THE NODE'S FILESYSTEM into the Pod
+# - Data survives Pod deletion (lives on the node)
+# - BUT: tied to a specific node — if Pod reschedules to another node,
+#   it sees a DIFFERENT directory (or nothing). Use nodeAffinity to pin.
+# - On GKE, the node is a COS/Ubuntu VM; writes land on that VM's disk
+# - NOT recommended for production multi-node workloads
+# Use cases: node-level logs/metrics, single-node dev clusters, DaemonSets
+# =========================================================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: bar-hostpath-pv
+  labels:
+    type: hostpath
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual-hostpath
+  hostPath:
+    path: /var/lib/bar-service
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bar-hostpath-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual-hostpath
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      type: hostpath
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bar-service-hostpath
+  labels:
+    app: bar-hostpath
+spec:
+  replicas: 1                     # keep 1 — hostPath is node-local
+  selector:
+    matchLabels:
+      app: bar-hostpath
+  template:
+    metadata:
+      labels:
+        app: bar-hostpath
+    spec:
+      containers:
+        - name: bar-service
+          image: docker.io/nagabhushanamn/bar-service:v2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATA_DIR
+              value: /data
+          volumeMounts:
+            - name: bar-data
+              mountPath: /data
+      volumes:
+        - name: bar-data
+          persistentVolumeClaim:
+            claimName: bar-hostpath-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-service-hostpath
+spec:
+  type: ClusterIP
+  selector:
+    app: bar-hostpath
+  ports:
+    - port: 80
+      targetPort: 8080

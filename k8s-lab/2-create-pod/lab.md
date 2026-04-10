@@ -65,13 +65,19 @@ kubectl delete -f pod.yaml
 
 Pod management controllers  ( Workload Apis )
 
-1. ReplicationController ( deprecated)
+
 2. ReplicaSet
 3. Deployment + Replicaset
 4. StatefulSet
 5. DaemonSet
 6. Job
 7. CronJob
+
+deployment -> - stateless e.g Microservices, web applications
+statefulset -> - stateful e.g databases, kafka, zookeeper
+daemonset -> - system wide services e.g monitoring, logging agents
+job -> - one time task e.g data migration, backup
+cronjob -> - scheduled tasks e.g periodic data cleanup, report generation
 
 
 

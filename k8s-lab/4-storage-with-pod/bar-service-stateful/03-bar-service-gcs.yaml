@@ -1,0 +1,114 @@
+# =========================================================================
+# GCS bucket as a volume — via the Cloud Storage FUSE CSI Driver on GKE
+# -------------------------------------------------------------------------
+# - Mounts a Google Cloud Storage bucket as a POSIX-like filesystem
+# - Data lives in GCS — survives Pod AND node deletion
+# - Accessible ReadWriteMany — many Pods on many nodes can share it
+# - Object storage semantics: great for blobs/logs/notes, NOT for databases
+# - Needs:
+#     1) GCS Fuse CSI driver enabled on the GKE cluster
+#          gcloud container clusters update <CLUSTER> \
+#            --update-addons GcsFuseCsiDriver=ENABLED --region <REGION>
+#     2) Workload Identity enabled on cluster + node pool
+#     3) A GCS bucket
+#     4) A Kubernetes ServiceAccount bound to a Google ServiceAccount
+#        that has roles/storage.objectUser on the bucket
+# -------------------------------------------------------------------------
+# Replace these placeholders before applying:
+#   <BUCKET_NAME>   — your GCS bucket (e.g. ford-phase6-bar-state)
+#   <GSA_EMAIL>     — Google SA email (e.g. bar-gcs@PROJECT.iam.gserviceaccount.com)
+# =========================================================================
+
+# --- KSA used by the Pod. Bind it to a GSA via Workload Identity. --------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bar-gcs-ksa
+  annotations:
+    iam.gke.io/gcp-service-account: <GSA_EMAIL>
+---
+# --- Static PV pointing at the bucket ------------------------------------
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: bar-gcs-pv
+spec:
+  capacity:
+    storage: 10Gi                 # size is nominal for GCS (it's object store)
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""            # static binding — no storage class
+  mountOptions:
+    - implicit-dirs               # treat prefixes as dirs
+    - uid=0
+    - gid=0
+  csi:
+    driver: gcsfuse.csi.storage.gke.io
+    volumeHandle: <BUCKET_NAME>   # MUST be the bucket name
+    volumeAttributes:
+      gcsfuseLoggingSeverity: warning
+---
+# --- PVC that statically binds to the PV above ---------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bar-gcs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: bar-gcs-pv
+  resources:
+    requests:
+      storage: 10Gi
+---
+# --- Deployment — multi-replica, all sharing the same GCS bucket ---------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bar-service-gcs
+  labels:
+    app: bar-gcs
+spec:
+  replicas: 3                     # RWX — all 3 pods see the same notes.log
+  selector:
+    matchLabels:
+      app: bar-gcs
+  template:
+    metadata:
+      labels:
+        app: bar-gcs
+      annotations:
+        gke-gcsfuse/volumes: "true"              # injects the fuse sidecar
+        gke-gcsfuse/cpu-limit: "250m"
+        gke-gcsfuse/memory-limit: "256Mi"
+    spec:
+      serviceAccountName: bar-gcs-ksa
+      containers:
+        - name: bar-service
+          image: docker.io/nagabhushanamn/bar-service:v2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATA_DIR
+              value: /data
+          volumeMounts:
+            - name: bar-data
+              mountPath: /data
+      volumes:
+        - name: bar-data
+          persistentVolumeClaim:
+            claimName: bar-gcs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-service-gcs
+spec:
+  type: ClusterIP
+  selector:
+    app: bar-gcs
+  ports:
+    - port: 80
+      targetPort: 8080

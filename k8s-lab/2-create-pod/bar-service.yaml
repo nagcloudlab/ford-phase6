@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bar-service-deployment
+  labels:
+    app: bar-rs
+spec:    
+  replicas: 30
+  selector:
+    matchLabels:
+      app: bar
+  template:
+    metadata:
+      labels:
+        app: bar
+    spec:
+      containers:
+      - name: bar-service
+        image: docker.io/nagabhushanamn/bar-service:v1
+        ports:
+        - containerPort: 8080
+    
